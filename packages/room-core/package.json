@@ -1,0 +1,14 @@
+{
+  "name": "@tablehub/room-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testGame.ts"
+  },
+  "dependencies": {
+    "@tablehub/game-sdk": "*",
+    "@tablehub/shared": "*"
+  }
+}

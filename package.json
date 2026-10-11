@@ -1,0 +1,23 @@
+{
+  "name": "tablehub",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n worker,web -c blue,magenta \"npm run dev -w @tablehub/worker\" \"npm run dev -w @tablehub/web\"",
+    "build": "npm run build -w @tablehub/web",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit && tsc -p apps/worker/tsconfig.json --noEmit",
+    "deploy": "npm run build && npm run deploy -w @tablehub/worker",
+    "new-game": "node scripts/new-game.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "9.2.5",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  }
+}
