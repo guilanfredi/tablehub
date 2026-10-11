@@ -9,7 +9,7 @@ App PWA (browser + celular) onde usuários entram com apelido, criam ou entram e
 - Truco Paulista; Dominó duplo-6 com parâmetros; Catan base 3–4 completo (com comércio entre jogadores).
 - Mudança de parâmetros pelo dono **não** desmarca o "pronto" (mudanças aparecem destacadas).
 - Hospedagem: Cloudflare Workers + Durable Objects (~US$0/mês no plano gratuito).
-- Repositório GitHub **público**; aprovação = **merge** do PR.
+- Repositório GitHub **público**. **Conta bot** do GitHub faz commits e abre PRs; a conta do usuário **revisa e aprova** (Approve). PR aprovado + CI verde → merge → deploy automático.
 
 ## Stack
 - Monorepo TypeScript (npm workspaces).
@@ -49,8 +49,8 @@ Bateria de conformidade (`runConformance`) obrigatória para todo jogo: partidas
 
 ## CI/CD (GitHub Actions + Cloudflare)
 1. `pr.yml` (todo PR): install → typecheck → testes (inclui conformidade de todos os jogos) → build → deploy de Worker de preview `tablehub-pr-<n>` (salas isoladas; preview URLs nativas da Cloudflare não suportam Durable Objects) → comenta URL no PR.
-2. Proteção da `main` (grátis em repo público): exige PR + `pr.yml` verde.
-3. Usuário aprova clicando **Merge**.
+2. Proteção da `main` (grátis em repo público): exige PR, `pr.yml` verde e **1 aprovação** (do usuário, via CODEOWNERS).
+3. Usuário revisa e clica **Approve**; com auto-merge habilitado no PR, o merge acontece sozinho.
 4. `deploy.yml` (push na `main`): testes de novo → `wrangler deploy` produção (concurrency de 1).
 5. `pr-cleanup.yml` (PR fechado): remove o Worker de preview.
 6. PRs de forks rodam testes sem secrets e sem preview.
@@ -59,7 +59,7 @@ Bateria de conformidade (`runConformance`) obrigatória para todo jogo: partidas
 Skill `add-game`: lê o manual → `RULES.md` (com dúvidas listadas) → `npm run new-game <id>` → engine + testes + conformidade → `Board.tsx` e assets → todos os testes → auto-revisão (`/code-review`) → teste no navegador embutido → abre PR (esteira acima).
 
 ## Passos manuais do usuário (uma vez)
-Criar conta Cloudflare + API token; criar repo público no GitHub; cadastrar secrets `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID`.
+Criar conta Cloudflare + API token; criar repo público no GitHub; criar a conta bot do GitHub, adicioná-la como colaboradora (write) e autenticar o `gh` local como bot; cadastrar secrets `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID`.
 
 ## Ordem de implementação
 1. Monorepo, `git init`, `npm run dev`; `shared`, `game-sdk`, `room-core` + testes.

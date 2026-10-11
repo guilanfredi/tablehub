@@ -1,0 +1,34 @@
+# TableHub
+
+Plataforma PWA para jogar boardgames em salas (Dominó, Truco Paulista, Catan…). Plano completo: `docs/PLAN.md`.
+
+## Fluxo de trabalho (obrigatório)
+- **Nunca commitar direto na `main`.** Toda mudança vai em branch + PR.
+- **Commits e PRs são feitos pela conta bot do GitHub**; o dono do repositório só revisa e aprova.
+  Antes de commitar, confira `git config user.name` / `user.email` (identidade do bot neste repo) e `gh auth status` (bot ativo).
+  Se não estiver configurado, pare e peça ao usuário — não use a conta pessoal dele.
+- PR aprovado + CI verde → merge → deploy automático (`.github/workflows/deploy.yml`).
+- Novos jogos: siga a skill `.claude/skills/add-game` e `docs/GAME_AUTHORING.md`.
+
+## Comandos
+```bash
+npm run dev         # worker (wrangler, :8787) + web (vite, :5173)
+npm test            # vitest: motores, conformidade, room-core
+npm run typecheck
+npm run build       # build do PWA em apps/web/dist
+node scripts/smoke.mjs http://localhost:8787   # teste ponta a ponta contra um servidor rodando
+npm run new-game -- <id> "<Nome>"
+```
+Para testar vários jogadores no mesmo navegador, use `?perfil=2`, `?perfil=3`… na URL.
+
+## Arquitetura
+- `packages/game-sdk` — contrato `GameDefinition`, `Rng`, hexgrid, `runConformance`.
+- `packages/room-core` — regras de sala/lobby puras (portáveis). Mudar regras **não** desmarca "pronto" (decisão de produto).
+- `packages/games/<id>` — motores dos jogos (TS puro, determinísticos, estado JSON).
+- `apps/worker` — Cloudflare Worker + 1 Durable Object por sala (WebSocket Hibernation). Protocolo em `packages/shared`.
+- `apps/web` — React + Vite PWA; tabuleiros em `src/games/<id>`.
+
+## Convenções
+- Textos de interface e mensagens de erro em português.
+- Aleatoriedade só via `Rng` com semente no estado; servidor autoritativo.
+- Arte própria (SVG); nunca usar assets protegidos de jogos comerciais.

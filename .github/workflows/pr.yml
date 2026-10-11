@@ -1,0 +1,73 @@
+name: PR
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Verificação de tipos
+        run: npm run typecheck
+      - name: Testes (inclui a bateria de conformidade de todos os jogos)
+        run: npm test
+      - name: Build
+        run: npm run build
+
+  preview:
+    name: preview
+    needs: test
+    # PRs vindos de forks não recebem segredos nem ambiente de preview
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WORKER_NAME: tablehub-pr-${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Publica o Worker de preview deste PR
+        id: deploy
+        working-directory: apps/worker
+        run: |
+          npx wrangler deploy --name "$WORKER_NAME" 2>&1 | tee deploy.log
+          url=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          if [ -z "$url" ]; then echo "URL do preview não encontrada" >&2; exit 1; fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+      - name: Smoke test no preview
+        run: node scripts/smoke.mjs "${{ steps.deploy.outputs.url }}"
+      - name: Comenta a URL no PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = '${{ steps.deploy.outputs.url }}';
+            const marker = '<!-- tablehub-preview -->';
+            const body = `${marker}\n### 🎲 Preview deste PR\n${url}\n\nSalas deste ambiente são isoladas da produção. Smoke test: ✅ passou.\nCommit: ${context.payload.pull_request.head.sha.slice(0, 7)}`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const existing = comments.find((c) => c.body?.includes(marker));
+            if (existing) await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            else await github.rest.issues.createComment({ owner, repo, issue_number, body });

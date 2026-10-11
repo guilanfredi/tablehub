@@ -2,16 +2,17 @@ import type { GameDefinition } from '@tablehub/game-sdk';
 import { catan } from './catan/engine';
 import { domino } from './domino/engine';
 import { trucoPaulista } from './truco-paulista/engine';
+// @new-game:import
 
 /**
  * Registro de todos os jogos disponíveis na plataforma.
- * Para adicionar um jogo: crie a pasta `packages/games/<id>/` e registre aqui
- * (e o tabuleiro em `apps/web/src/games/registry.ts`).
+ * Para adicionar um jogo: `npm run new-game <id> "<Nome>"` (ver docs/GAME_AUTHORING.md).
  */
 export const GAMES: Record<string, GameDefinition> = {
   [domino.id]: domino,
   [trucoPaulista.id]: trucoPaulista,
   [catan.id]: catan,
+  // @new-game:entry
 };
 
 export const GAME_LIST: GameDefinition[] = Object.values(GAMES);

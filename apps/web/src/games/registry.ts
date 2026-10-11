@@ -1,6 +1,6 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
-import type { GameState } from '../store/room';
 import type { RoomView } from '@tablehub/shared';
+import type { GameState } from '../store/room';
 
 export interface BoardProps {
   game: GameState;
@@ -11,11 +11,12 @@ export interface BoardProps {
 }
 
 /**
- * Tabuleiro (interface) de cada jogo. Carregado sob demanda.
- * Ao adicionar um jogo, registre aqui o componente `Board` dele.
+ * Tabuleiro (interface) de cada jogo, carregado sob demanda.
+ * `npm run new-game` adiciona a entrada automaticamente.
  */
 export const BOARDS: Record<string, LazyExoticComponent<ComponentType<BoardProps>>> = {
   domino: lazy(() => import('./domino/DominoBoard')),
   'truco-paulista': lazy(() => import('./truco-paulista/TrucoBoard')),
   catan: lazy(() => import('./catan/CatanBoard')),
+  // @new-game:board
 };
