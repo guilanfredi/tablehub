@@ -1,0 +1,274 @@
+.catan {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.catan-players {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 6px;
+}
+
+.catan-player {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left-width: 5px;
+  font-size: 0.875rem;
+}
+
+.catan-player.active {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.catan-player .swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid #0004;
+}
+
+.catan-player .pname {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catan-player .pstats {
+  flex-basis: 100%;
+}
+
+.catan-player .vp {
+  font-weight: 800;
+}
+
+.catan-main {
+  display: grid;
+  gap: 10px;
+}
+
+@media (min-width: 900px) {
+  .catan-main {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    align-items: start;
+  }
+}
+
+.catan-board {
+  padding: 8px;
+  background: radial-gradient(ellipse at center, #3d7fa6 0%, #2b5f80 100%);
+}
+
+.catan-board-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 6px 6px;
+}
+
+.dice {
+  background: rgb(0 0 0 / 0.25);
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.catan-hint {
+  background: #f2c14e;
+  color: #2a2110;
+  font-weight: 700;
+  font-size: 0.875rem;
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.catan .num {
+  font-size: 15px;
+  font-weight: 800;
+  fill: #2b2417;
+  font-family: var(--font);
+}
+
+.catan .num.red {
+  fill: #b3342f;
+}
+
+.catan .port-label {
+  font-size: 10px;
+  font-weight: 800;
+  fill: #2b2417;
+  font-family: var(--font);
+}
+
+.catan .small-label {
+  font-size: 12px;
+}
+
+.catan .hit {
+  cursor: pointer;
+}
+
+.catan .hex-target {
+  fill: rgb(242 193 78 / 0.25);
+  stroke: #f2c14e;
+  stroke-width: 4;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.catan .edge-target {
+  stroke: #ffd451;
+  stroke-width: 9;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 2px #2a2110);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.catan .vertex-target {
+  fill: #f2c14e;
+  stroke: #2a2110;
+  stroke-width: 2;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.hand {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.res {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 2px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.res.zero {
+  opacity: 0.45;
+}
+
+.res-n {
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+
+.res-name {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.build-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.build-grid .btn {
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+}
+
+.cost {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  font-size: 0.75rem;
+}
+
+.cost-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.trade-box {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  gap: 8px;
+}
+
+.trade-open {
+  border-color: var(--warn);
+}
+
+.chip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 4px 10px;
+  min-height: 36px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.chip.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.trade-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.trade-table th {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-align: center;
+}
+
+.trade-table td {
+  padding: 2px 0;
+  text-align: center;
+}
+
+.trade-table td:first-child {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stepper .btn {
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+}
+
+.stepper-val {
+  min-width: 18px;
+  text-align: center;
+  font-weight: 700;
+}

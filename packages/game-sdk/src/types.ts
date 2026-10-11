@@ -71,6 +71,8 @@ export interface GameDefinition<S = any, A = any, O extends GameOptions = GameOp
   maxPlayers: number;
   optionsSchema: OptionField[];
   rulesSummary(options: O, playerCount: number): string[];
+  /** Rótulo opcional do assento no lobby (ex.: "Dupla A"), para jogos com times. */
+  seatLabel?(seat: number, options: O, playerCount: number): string | null;
   validateConfig(options: O, playerCount: number): string | null;
   setup(ctx: SetupContext<O>): S;
   getPlayerView(state: S, playerId: string | null): unknown;

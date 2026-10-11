@@ -451,6 +451,7 @@ export const trucoPaulista: GameDefinition<TrucoState, TrucoAction, TrucoOptions
     if (o.maoDeFerro) lines.push(`Mão de ferro: com ${target - 1} a ${target - 1}, todos jogam sem ver as próprias cartas e não há truco.`);
     return lines;
   },
+  seatLabel: (seat, _o, n) => (n === 4 ? (seat % 2 === 0 ? 'Dupla A' : 'Dupla B') : null),
   validateConfig(_o, n) {
     if (n !== 2 && n !== 4) return 'Truco Paulista é jogado com 2 ou 4 jogadores.';
     return null;

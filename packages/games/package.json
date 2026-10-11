@@ -5,6 +5,9 @@
   "type": "module",
   "exports": {
     ".": "./index.ts",
-    "./*": "./*"
+    "./*": "./*.ts"
+  },
+  "dependencies": {
+    "@tablehub/game-sdk": "*"
   }
 }

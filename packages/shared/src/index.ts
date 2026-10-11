@@ -24,6 +24,8 @@ const optionValue = z.union([z.string().max(100), z.number(), z.boolean()]);
 
 /** Mensagens do cliente para o servidor (WebSocket). */
 export const clientMessageSchema = z.discriminatedUnion('t', [
+  /** Primeira mensagem após conectar: identifica o jogador (token fica fora da URL). */
+  z.object({ t: z.literal('hello'), token: z.string().min(16).max(128), name: playerNameSchema }),
   z.object({ t: z.literal('setGame'), gameId: z.string().max(40).nullable() }),
   z.object({ t: z.literal('setOptions'), options: z.record(z.string(), optionValue) }),
   z.object({ t: z.literal('movePlayer'), playerId: z.string().max(64), toIndex: z.number().int().min(0).max(MAX_ROOM_PLAYERS) }),
@@ -88,7 +90,7 @@ export type ServerMessage =
   | { t: 'room'; room: RoomView; you: string }
   | { t: 'game'; gameId: string; seq: number; view: unknown; status: GameStatusView; legal: unknown[] }
   | { t: 'gameEnded' }
-  | { t: 'error'; message: string }
+  | { t: 'error'; message: string; fatal?: boolean }
   | { t: 'kicked' }
   | { t: 'pong' };
 

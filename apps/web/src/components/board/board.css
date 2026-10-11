@@ -1,0 +1,30 @@
+.panzoom {
+  position: relative;
+  width: 100%;
+}
+
+.panzoom-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.panzoom-controls {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.panzoom-controls .btn {
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  font-size: 1.1rem;
+  opacity: 0.9;
+}

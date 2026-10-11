@@ -321,6 +321,7 @@ export const domino: GameDefinition<DominoState, DominoAction, DominoOptions> = 
     if (o.teams && n === 4) lines.push('Em duplas: 1º e 3º jogadores contra 2º e 4º; os pontos são da dupla.');
     return lines;
   },
+  seatLabel: (seat, o, n) => (o.teams && n === 4 ? (seat % 2 === 0 ? 'Dupla A' : 'Dupla B') : null),
   validateConfig(o, n) {
     if (o.teams && n !== 4) return 'Duplas exigem exatamente 4 jogadores.';
     return null;
