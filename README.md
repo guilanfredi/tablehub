@@ -2,7 +2,7 @@
 
 Jogue boardgames com os amigos pelo navegador ou celular: crie uma sala, compartilhe o código, escolha o jogo e as regras, todos marcam "pronto" e o dono inicia.
 
-**Jogos:** Dominó (duplo-6) · Truco Paulista · Catan (base, 3–4 jogadores)
+**Jogos:** Dominó (duplo-6) · Truco · Catan (base, 3–4 jogadores)
 
 ## Rodando localmente
 Requer Node 20+.
