@@ -6,10 +6,10 @@ comentários carregam achados e decisões. O dono do repositório (@guilanfredi)
 
 | Função | Comando | Entrega | Não faz |
 |---|---|---|---|
-| Analista de regras | `/analista <issue ou jogo>` | `RULES.md` + dúvidas de interpretação, PR em rascunho | código |
+| Analista | `/analista <issue ou jogo>` | especificação (`RULES.md` de jogo ou `docs/specs/` de melhoria) + dúvidas, PR em rascunho | código |
 | Desenvolvedor | `/dev <PR ou issue>` | motor, testes, interface; corrige achados | aprovar, mudar regras sem aval |
 | QA | `/qa <PR>` | jogo testado no navegador/celular, testes de regressão, relatório | corrigir o motor |
-| Revisor | `/revisor <PR>` | revisão comentada do diff contra o `RULES.md` | editar código |
+| Revisor | `/revisor <PR>` | revisão comentada do diff contra a especificação | editar código |
 | Você | — | responde dúvidas, aprova e faz o merge | — |
 
 ## Fluxo de um jogo novo
@@ -28,7 +28,10 @@ manual em manuals/<id>.pdf
   └─ você aprova → merge → deploy automático
 ```
 
-Mudanças que não são jogos novos (bugs, melhorias) começam direto no `/dev` com uma issue ou descrição.
+Bugs e melhorias pequenas começam direto no `/dev` (modelos "Bug" e "Melhoria").
+Melhorias grandes ou com decisões a tomar usam o modelo **"Melhoria com especificação"**: o `/analista` estuda o código e escreve
+`docs/specs/<nº>-<slug>.md` (objetivo, comportamento, mudanças técnicas, critérios de aceite), pergunta o que for decisão do dono e segue o mesmo fluxo acima.
+Em ambos os casos o Analista mantém na issue de origem um comentário com a especificação completa, atualizado a cada mudança.
 
 ## Tarefas e disparo automático
 - **Tarefas são issues.** Os modelos (Novo jogo / Bug / Melhoria) já aplicam a etiqueta inicial: `fase:spec` para jogo novo, `fase:dev` para o resto.

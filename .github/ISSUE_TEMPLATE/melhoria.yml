@@ -1,5 +1,5 @@
 name: Melhoria
-description: Mudança ou recurso novo (que não seja um jogo novo). O Desenvolvedor começa automaticamente.
+description: Mudança pequena e clara (que não seja um jogo novo). O Desenvolvedor começa automaticamente. Se houver decisões a tomar, use "Melhoria com especificação".
 title: "Melhoria: "
 labels: ["fase:dev"]
 body:
