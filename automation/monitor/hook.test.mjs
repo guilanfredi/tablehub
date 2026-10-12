@@ -43,5 +43,6 @@ describe('monitor: hook', () => {
     let s = null;
     for (let i = 0; i < 8; i++) s = applyEvent(s, ev('PreToolUse', { tool_name: 'Read', tool_input: { file_path: `f${i}.ts` } }), `t${i}`);
     expect(s.recentTools).toEqual(['Read: f7.ts', 'Read: f6.ts', 'Read: f5.ts', 'Read: f4.ts', 'Read: f3.ts']);
+    expect(s.toolCount).toBe(8);
   });
 });

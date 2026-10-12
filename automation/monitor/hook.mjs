@@ -74,6 +74,7 @@ export function applyEvent(prev, input, now, env = {}) {
       s.currentTool = tool;
       s.toolStartedAt = now;
       s.recentTools = [tool, ...(s.recentTools ?? [])].slice(0, MAX_RECENT_TOOLS);
+      s.toolCount = (s.toolCount ?? 0) + 1;
       delete s.message;
       break;
     }

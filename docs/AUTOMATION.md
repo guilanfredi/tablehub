@@ -53,8 +53,14 @@ Funciona por hooks nas configurações do usuário (`~/.claude/settings.json`), 
   ```
   Copia o hook para `~/.claude/monitor/hook.mjs` (independe da branch aberta) e faz backup em `settings.json.bak`.
   Sessões já abertas costumam aparecer no próximo evento (o Claude Code recarrega os hooks); se não, reinicie-as. Remover: `node automation/monitor/install.mjs --remover`.
-- **Ver:** `npm run agentes` (uma vez), `npm run agentes -- --watch` (atualiza a cada 3 s), `--todas` (inclui encerradas
-  nas últimas 24 h), `--json` (para scripts).
+- **Ver:** `npm run agentes` abre um dashboard no terminal, no estilo `pm2 monit`:
+  - **Sessões**: todas as instâncias, com o estado de cada uma.
+  - **Atividade**: o que a sessão selecionada está fazendo (pedidos, respostas, ferramentas e erros), lido do transcript ao vivo.
+  - **Detalhes**: origem, PID, modelo, pasta e último pedido.
+  - **Métricas**: CPU e memória da árvore de processos da sessão (com gráfico), tokens de contexto e chamadas de ferramenta.
+
+  Teclas: `↑↓` escolhe a sessão, `PgUp/PgDn` rola a atividade, `End` volta a acompanhar, `t` mostra também as encerradas e `q` sai.
+  Para scripts: `--texto` (lista simples), `--json` e `--todas` (inclui encerradas nas últimas 24 h).
 - Sessões do despachante aparecem como `/<função> <n>` (variável `TABLEHUB_AGENT`).
 - `⚠ sem atividade` = sessão trabalhando sem nenhum evento há mais de 10 min (possível travamento).
 - Processos do Claude Code sem dados do hook também são listados (ex.: sessão parada desde antes da instalação).
