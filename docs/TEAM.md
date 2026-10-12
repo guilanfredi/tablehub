@@ -65,6 +65,12 @@ Todo texto que um agente publica (comentário, commit, PR) vai ser lido por um h
 achados que importam, decisões pendentes, como testar. Nada de resumos do diff, listas do que foi verificado e está certo, elogios ou introduções.
 Cada função tem regras específicas na própria skill (o Revisor só comenta problemas com consequência concreta; o Dev usa no máximo 3 linhas).
 
+## Quadro de tarefas
+O quadro [TableHub](https://github.com/users/guilanfredi/projects/2) tem um cartão por **issue**. O Status anda sozinho:
+`.github/workflows/project-sync.yml` copia a etiqueta de fase (da issue, ou do PR que a fecha com `Closes #N`) para o Status;
+os workflows nativos do projeto adicionam issues novas e marcam **Concluído** no fechamento/merge.
+Uma issue sem etiqueta de fase fica em **Backlog** e o despachante a ignora — colocar a etiqueta é o que libera a tarefa para os agentes.
+
 ## Etiquetas de fase
 `fase:spec` · `fase:dev` · `fase:qa` · `fase:review` · `pronto-para-aprovação`
 
