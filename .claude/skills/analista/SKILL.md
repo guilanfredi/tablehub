@@ -53,9 +53,22 @@ No modo Jogo, se o manual não estiver em `manuals/`, pergunte ao dono (passo 8)
    `gh pr create --draft --base main --title "<título>" --label fase:spec --body-file <arquivo>`
    No corpo: `Closes #<issue>` (se veio de issue), resumo, decisões propostas, dúvidas numeradas pedindo decisão e o rodapé de geração do Claude Code.
    Se veio de issue, remova a etiqueta de fase dela (`gh issue edit <issue> --remove-label fase:spec`): a partir daqui a fase vive no PR.
+   **Registre a especificação na issue** (documentação): veja "Especificação na issue" no fim desta skill.
 7. Comente no PR começando com **[Analista]**, resumindo o que precisa de decisão do dono.
 8. Havendo dúvidas: o comentário do passo 7 menciona @guilanfredi e você adiciona a etiqueta `aguardando-dono` (`gh pr edit <n> --add-label aguardando-dono`). Em sessão interativa, informe também o link e as dúvidas ao usuário; se ele responder aqui mesmo, siga para o passo 9. No modo automático, encerre: o despachante te chama de volta quando o dono comentar.
    Sem dúvidas: vá direto à troca de etiqueta do passo 9.
 9. **Retomada:** descubra a branch do PR (`gh pr view <n> --json headRefName`), `git fetch origin <branch> && git switch --detach origin/<branch>`; leia as respostas do dono (`gh pr view <n> --comments`), atualize a especificação (decisões entram no texto; a dúvida fica registrada como resolvida), commit e `git push origin HEAD:<branch>`.
-   Comente **[Analista]** resumindo as decisões incorporadas e **só então** troque a etiqueta: `gh pr edit <n> --remove-label fase:spec --add-label fase:dev`.
+   Atualize o comentário da especificação na issue (ver abaixo), comente **[Analista]** resumindo as decisões incorporadas e **só então** troque a etiqueta: `gh pr edit <n> --remove-label fase:spec --add-label fase:dev`.
    Se alguma dúvida continuar sem resposta, pergunte de novo no PR (mencionando @guilanfredi), adicione `aguardando-dono` e mantenha `fase:spec`.
+
+## Especificação na issue
+A issue de origem guarda uma cópia legível da especificação, para quem acompanha pelo GitHub sem abrir o código.
+Só se aplica quando a tarefa veio de uma issue (no retorno, ache-a com `gh pr view <n> --json closingIssuesReferences`).
+
+- Mantenha **um único comentário** com a especificação. A primeira linha do corpo é o marcador `<!-- analista:spec -->`, seguido de:
+  `**[Analista] Especificação**` · link para o arquivo no PR (`https://github.com/guilanfredi/tablehub/blob/<branch>/<caminho>`) · o **conteúdo completo** do arquivo da especificação.
+- Procure o comentário existente: `gh api repos/guilanfredi/tablehub/issues/<issue>/comments --paginate --jq '.[] | select(.body | startswith("<!-- analista:spec -->")) | .id'`.
+  - Existe: atualize-o (`gh api -X PATCH repos/guilanfredi/tablehub/issues/comments/<id> -F body=@<arquivo>`).
+  - Não existe: crie (`gh issue comment <issue> --body-file <arquivo>`).
+- Sempre que a especificação mudar (passos 6 e 9), atualize o mesmo comentário. Nada de comentários novos a cada versão.
+- Se o conteúdo passar de 60 mil caracteres (limite do GitHub), publique as seções principais e o link para o arquivo completo.

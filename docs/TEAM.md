@@ -31,6 +31,7 @@ manual em manuals/<id>.pdf
 Bugs e melhorias pequenas começam direto no `/dev` (modelos "Bug" e "Melhoria").
 Melhorias grandes ou com decisões a tomar usam o modelo **"Melhoria com especificação"**: o `/analista` estuda o código e escreve
 `docs/specs/<nº>-<slug>.md` (objetivo, comportamento, mudanças técnicas, critérios de aceite), pergunta o que for decisão do dono e segue o mesmo fluxo acima.
+Em ambos os casos o Analista mantém na issue de origem um comentário com a especificação completa, atualizado a cada mudança.
 
 ## Tarefas e disparo automático
 - **Tarefas são issues.** Os modelos (Novo jogo / Bug / Melhoria) já aplicam a etiqueta inicial: `fase:spec` para jogo novo, `fase:dev` para o resto.
