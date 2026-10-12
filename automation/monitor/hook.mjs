@@ -12,7 +12,7 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { basename, join } from 'node:path';
+import { join, win32 } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 export const MONITOR_DIR = process.env.TABLEHUB_MONITOR_DIR || join(homedir(), '.claude', 'monitor');
@@ -31,7 +31,7 @@ export function summarizeTool(name, input = {}) {
   const i = input ?? {};
   let detail = '';
   if (name === 'Bash' || name === 'PowerShell') detail = i.description || i.command;
-  else if (i.file_path) detail = basename(String(i.file_path));
+  else if (i.file_path) detail = win32.basename(String(i.file_path)); // win32 aceita "\" e "/" em qualquer SO
   else if (name === 'Skill') detail = i.skill;
   else if (name === 'Agent' || name === 'Task') detail = i.description;
   else if (name === 'Grep' || name === 'Glob') detail = i.pattern;

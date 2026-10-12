@@ -7,7 +7,7 @@
  *   npm run agentes -- --todas      inclui sessões encerradas nas últimas 24 h (texto/json)
  *   npm run agentes -- --json       saída em JSON (para scripts)
  */
-import { basename } from 'node:path';
+import { win32 } from 'node:path';
 import { loadSessions, origin, sampleProcesses, untrackedProcesses } from './data.mjs';
 import { startDashboard } from './dashboard.mjs';
 
@@ -41,7 +41,7 @@ async function printOnce() {
   const lines = [`Claude Code — ${sessions.filter((s) => s.active).length} sessão(ões) ativa(s)`, ''];
   if (!shown.length) lines.push('Nenhuma sessão registrada pelo hook. Instalou? node automation/monitor/install.mjs', '');
   for (const s of shown) {
-    const name = s.agent ? `/${s.agent}` : basename(s.cwd ?? '?');
+    const name = s.agent ? `/${s.agent}` : win32.basename(s.cwd ?? '?');
     let state = s.state;
     if (s.state === 'executando' && s.toolStartedAt) state += ` há ${ago(s.toolStartedAt, now)}`;
     if (s.stale) state += ` ⚠ sem atividade há ${ago(s.lastEventAt, now)}`;

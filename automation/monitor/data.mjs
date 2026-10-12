@@ -3,7 +3,7 @@
  */
 import { execFile } from 'node:child_process';
 import { closeSync, openSync, readdirSync, readFileSync, readSync, statSync, unlinkSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { join, win32 } from 'node:path';
 import { SESSIONS_DIR } from './hook.mjs';
 
 const KEEP_MS = 24 * 3600_000;
@@ -54,7 +54,7 @@ function oneLine(text, max = 400) {
 
 function toolLabel(name, input = {}) {
   const i = input ?? {};
-  const detail = i.description || i.command || (i.file_path && basename(String(i.file_path))) || i.skill || i.pattern || i.url || i.query || '';
+  const detail = i.description || i.command || (i.file_path && win32.basename(String(i.file_path))) || i.skill || i.pattern || i.url || i.query || '';
   return detail ? `${name}: ${oneLine(detail, 160)}` : name;
 }
 
