@@ -49,6 +49,11 @@ git push origin HEAD:<branch>
 git fetch origin <branch> && git rebase origin/<branch>
 ```
 
+## Comunicação
+Todo texto que um agente publica (comentário, commit, PR) vai ser lido por um humano. Escreva só o que alguém precisa saber para agir:
+achados que importam, decisões pendentes, como testar. Nada de resumos do diff, listas do que foi verificado e está certo, elogios ou introduções.
+Cada função tem regras específicas na própria skill (o Revisor só comenta problemas com consequência concreta; o Dev usa no máximo 3 linhas).
+
 ## Etiquetas de fase
 `fase:spec` · `fase:dev` · `fase:qa` · `fase:review` · `pronto-para-aprovação`
 
