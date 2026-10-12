@@ -1,14 +1,16 @@
 ---
 name: add-game
-description: Implementa um novo jogo de tabuleiro no TableHub a partir do manual (PDF, imagens ou texto) — especificação, motor, testes, interface, revisão e PR. Use quando o usuário anexar um manual ou pedir para adicionar um jogo.
+description: Modo solo (uma única sessão) para implementar um novo jogo de tabuleiro no TableHub a partir do manual (PDF, imagens ou texto) — especificação, motor, testes, interface, revisão e PR. Use apenas quando o usuário pedir explicitamente que uma única sessão faça tudo; o padrão é /analista.
 ---
 
-# Adicionar um jogo a partir do manual
+# Adicionar um jogo a partir do manual (modo solo)
+
+> O fluxo padrão do projeto é o time de agentes em sessões separadas (`docs/TEAM.md`: /analista → /dev → /qa → /revisor). Use este modo solo só quando o usuário pedir explicitamente que uma sessão faça tudo.
 
 Siga as etapas em ordem. Leia `docs/GAME_AUTHORING.md` antes de começar e use Dominó, Truco Paulista e Catan (`packages/games/*`) como referência de estilo.
 
 ## 0. Preparação
-- Crie uma branch: `git checkout -b game/<id>` a partir da `main` atualizada.
+- Crie a branch a partir da `main` remota: `git fetch origin && git switch -c game/<id> origin/main` (funciona em worktree; veja o `docs/TEAM.md`).
 - Confirme que commits sairão pela **conta bot** (`git config user.name`, `gh auth status`). Se não estiverem configurados, pare e peça ao usuário — não use a conta pessoal dele.
 
 ## 1. Entender o manual → `RULES.md`
