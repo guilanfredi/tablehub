@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GAME_LIST } from '@tablehub/games';
-import { isValidRoomCode, NAME_MAX, normalizeRoomCode } from '@tablehub/shared';
+import { isValidRoomCode, normalizeRoomCode } from '@tablehub/shared';
+import { ProfileEditor } from '../components/avatars/ProfileEditor';
 import { createRoom, roomExists } from '../lib/api';
 import { getName, profileQuery, setName } from '../lib/session';
 
@@ -63,20 +64,15 @@ export function Home() {
 
       <div className="home-grid">
         <div className="card stack">
-          <div>
-            <label className="label" htmlFor="name">
-              Seu apelido
-            </label>
-            <input
-              id="name"
-              className="input"
-              value={name}
-              maxLength={NAME_MAX}
-              autoComplete="nickname"
-              placeholder="Como os outros vão te chamar"
-              onChange={(e) => setNameState(e.target.value)}
-            />
-          </div>
+          <h3 style={{ margin: 0 }}>Seu perfil</h3>
+          <ProfileEditor
+            name={name}
+            onName={(n) => {
+              setNameState(n);
+              setName(n);
+            }}
+            inputId="name"
+          />
           <button className="btn btn-primary btn-block" onClick={onCreate} disabled={busy !== null}>
             {busy === 'create' ? 'Criando…' : 'Criar sala'}
           </button>

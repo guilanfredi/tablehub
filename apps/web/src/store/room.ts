@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import type { ClientMessage, GameStatusView, RoomView, ServerMessage } from '@tablehub/shared';
-import { getName, getToken } from '../lib/session';
-import { gameSounds, roomSounds } from '../lib/soundEvents';
+import { getAvatar, getName, getToken } from '../lib/session';
+import { GAMES } from '@tablehub/games';
+import { becameMyTurn, gameSounds, roomSounds } from '../lib/soundEvents';
 import { playFirst } from '../lib/sounds';
+import { stopTurnAlert, turnAlert } from '../lib/turnAlert';
 
 export interface GameState {
   gameId: string;
@@ -59,7 +61,7 @@ export const useRoom = create<RoomStore>((set, get) => {
 
     ws.onopen = () => {
       retry = 0;
-      ws.send(JSON.stringify({ t: 'hello', token: getToken(), name: getName() || 'Jogador' } satisfies ClientMessage));
+      ws.send(JSON.stringify({ t: 'hello', token: getToken(), name: getName() || 'Jogador', avatar: getAvatar() } satisfies ClientMessage));
       set({ conn: 'open' });
       pingTimer = setInterval(() => ws.readyState === WebSocket.OPEN && ws.send('{"t":"ping"}'), 25_000);
     };
@@ -68,12 +70,17 @@ export const useRoom = create<RoomStore>((set, get) => {
       switch (msg.t) {
         case 'room':
           playFirst(roomSounds(get().room, msg.room, msg.you));
+          if (msg.room.status === 'lobby') stopTurnAlert();
           set((s) => ({ room: msg.room, you: msg.you, game: msg.room.status === 'lobby' ? null : s.game }));
           break;
-        case 'game':
-          playFirst(gameSounds(get().game, msg, get().you));
+        case 'game': {
+          const { game: prev, you } = get();
+          playFirst(gameSounds(prev, msg, you));
+          if (becameMyTurn(prev, msg, you)) turnAlert(GAMES[msg.gameId]?.name ?? 'TableHub');
+          else if (!(you && msg.status.phase === 'playing' && msg.status.currentPlayers.includes(you))) stopTurnAlert();
           set({ game: { gameId: msg.gameId, seq: msg.seq, view: msg.view, status: msg.status, legal: msg.legal } });
           break;
+        }
         case 'error':
           if (msg.fatal) {
             wanted = null;
@@ -130,6 +137,7 @@ export const useRoom = create<RoomStore>((set, get) => {
     disconnect() {
       wanted = null;
       cleanup();
+      stopTurnAlert();
       set({ code: null, conn: 'idle', room: null, game: null, you: null, fatal: null });
     },
     send(msg) {

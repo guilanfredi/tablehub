@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { checkPlayerCount, defaultOptions, type GameDefinition } from '@tablehub/game-sdk';
 import { GAME_LIST, GAMES } from '@tablehub/games';
 import type { RoomView } from '@tablehub/shared';
+import { setAvatar } from '../lib/session';
 import { useRoom } from '../store/room';
+import { Avatar, AvatarPicker } from './avatars/Avatar';
 import { OptionsForm } from './OptionsForm';
 
 /** "2–4 jogadores" ou "2 ou 4 jogadores", conforme as quantidades que o jogo aceita. */
@@ -44,6 +46,7 @@ export function Lobby() {
   const blocker = startBlocker(room, def);
   const changes = useRecentChanges(room);
   const staleReady = !isOwner && me?.ready && me.readyAtVersion < room.optionsVersion;
+  const [picking, setPicking] = useState(false);
 
   return (
     <div className="lobby">
@@ -62,11 +65,18 @@ export function Lobby() {
               const isRoomOwner = p.id === room.ownerId;
               const stale = p.ready && !isRoomOwner && p.readyAtVersion < room.optionsVersion;
               return (
-                <li key={p.id} className="player-item">
+                <li key={p.id} className={`player-item ${p.bot ? 'is-bot' : ''}`}>
                   <span className="seat" title="Ordem na mesa">
                     {i + 1}
                   </span>
                   <span className={`dot ${p.connected ? 'dot-on' : ''}`} title={p.connected ? 'Conectado' : 'Desconectado'} />
+                  {p.id === you ? (
+                    <button type="button" className="avatar-button" aria-label="Trocar avatar" aria-expanded={picking} onClick={() => setPicking((v) => !v)}>
+                      <Avatar id={p.avatar} size={36} />
+                    </button>
+                  ) : (
+                    <Avatar id={p.avatar} size={36} bot={p.bot} dim={!p.connected} />
+                  )}
                   <span className="name">
                     {p.name}
                     {p.id === you && <span className="muted small"> (você)</span>}
@@ -107,6 +117,16 @@ export function Lobby() {
               );
             })}
           </ul>
+          {picking && me && (
+            <AvatarPicker
+              value={me.avatar}
+              onPick={(avatar) => {
+                setAvatar(avatar);
+                setPicking(false);
+                send({ t: 'rename', name: me.name, avatar });
+              }}
+            />
+          )}
           {isOwner && room.botsAvailable && def && room.players.length < def.maxPlayers && (
             <button className="btn btn-sm" onClick={() => send({ t: 'addBot' })}>
               Adicionar bot

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { GameStatusView, RoomPlayerView, RoomView } from '@tablehub/shared';
-import { gameSounds, roomSounds } from './soundEvents';
+import { becameMyTurn, gameSounds, roomSounds } from './soundEvents';
 
-const player = (id: string, ready = false): RoomPlayerView => ({ id, name: id, ready, readyAtVersion: 0, connected: true, bot: false });
+const player = (id: string, ready = false): RoomPlayerView => ({ id, name: id, avatar: 'onca', ready, readyAtVersion: 0, connected: true, bot: false });
 
 function room(players: RoomPlayerView[], status: RoomView['status'] = 'lobby'): RoomView {
   return {
@@ -43,6 +43,21 @@ describe('roomSounds', () => {
   it('toca ao começar a partida', () => {
     const a = room([player('eu', true), player('ana', true)]);
     expect(roomSounds(a, room(a.players, 'playing'), 'eu')).toEqual(['start']);
+  });
+});
+
+describe('becameMyTurn', () => {
+  it('só quando a vez passa a ser minha, a partir do segundo estado', () => {
+    expect(becameMyTurn(null, game(1, status(['eu'])), 'eu')).toBe(false); // primeira mensagem
+    expect(becameMyTurn(game(1, status(['ana'])), game(2, status(['eu'])), 'eu')).toBe(true);
+    expect(becameMyTurn(game(1, status(['eu'])), game(2, status(['eu'])), 'eu')).toBe(false); // continua minha
+    expect(becameMyTurn(game(1, status(['ana'])), game(2, status(['bia'])), 'eu')).toBe(false);
+    expect(becameMyTurn(game(2, status(['ana'])), game(2, status(['eu'])), 'eu')).toBe(false); // estado repetido
+  });
+
+  it('nunca para espectador nem no fim da partida', () => {
+    expect(becameMyTurn(game(1, status(['ana'])), game(2, status(['bia'])), null)).toBe(false);
+    expect(becameMyTurn(game(1, status(['ana'])), game(2, status(['eu'], { phase: 'finished' })), 'eu')).toBe(false);
   });
 });
 
