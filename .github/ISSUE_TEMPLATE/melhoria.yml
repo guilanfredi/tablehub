@@ -1,6 +1,6 @@
 name: Melhoria
 description: Mudança ou recurso novo (que não seja um jogo novo). O Desenvolvedor começa automaticamente.
-title: ""
+title: "Melhoria: "
 labels: ["fase:dev"]
 body:
   - type: textarea

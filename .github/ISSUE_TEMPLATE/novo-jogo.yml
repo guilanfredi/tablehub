@@ -7,7 +7,7 @@ body:
     id: jogo
     attributes:
       label: Jogo
-      description: Nome do jogo e id sugerido (kebab-case), ex.: "Ticket to Ride (ticket-to-ride)"
+      description: 'Nome do jogo e id sugerido (kebab-case), ex.: "Ticket to Ride (ticket-to-ride)"'
     validations:
       required: true
   - type: input
