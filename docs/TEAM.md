@@ -17,7 +17,8 @@ comentários carregam achados e decisões. O dono do repositório (@guilanfredi)
 ```
 manual em manuals/<id>.pdf
   └─ /analista  → branch game/<id>, RULES.md, PR rascunho        [fase:spec]
-       você responde as dúvidas no PR e troca a etiqueta          → [fase:dev]
+       você responde as dúvidas no PR
+  └─ /analista <PR> → relê as respostas, atualiza o RULES.md      → [fase:dev]
   └─ /dev       → motor + testes + interface, CI verde            → [fase:qa]
   └─ /qa        → joga com vários perfis, celular, casos de borda
                    ok → [fase:review]   bugs → comentários + [fase:dev]
@@ -29,13 +30,34 @@ manual em manuals/<id>.pdf
 
 Mudanças que não são jogos novos (bugs, melhorias) começam direto no `/dev` com uma issue ou descrição.
 
+## Branches e worktrees
+Cada sessão do app desktop roda num worktree próprio (`.claude/worktrees/<nome>`), e o Git não deixa a mesma branch
+ficar em dois worktrees ao mesmo tempo (a `main` e a branch do PR costumam estar na cópia principal). Por isso,
+**nenhuma função faz `git checkout <branch>`, `gh pr checkout` sem `--detach` nem `git pull`**. Em vez disso:
+
+```bash
+# branch nova a partir da main (sem precisar da main local)
+git fetch origin && git switch -c <branch> origin/main
+git push -u origin <branch>
+
+# trabalhar num PR existente
+git fetch origin <branch> && git switch --detach origin/<branch>   # ou: gh pr checkout <n> --detach
+# ... commits ...
+git push origin HEAD:<branch>
+
+# atualizar com o que outra sessão publicou na branch do PR
+git fetch origin <branch> && git rebase origin/<branch>
+```
+
 ## Etiquetas de fase
 `fase:spec` · `fase:dev` · `fase:qa` · `fase:review` · `pronto-para-aprovação`
 
-Cada sessão, ao terminar, troca a etiqueta (`gh pr edit <n> --remove-label X --add-label Y`) e deixa um comentário-resumo começando com o nome da função em negrito, ex.: **[QA]**.
+Cada sessão, ao terminar, troca a etiqueta **removendo a anterior** (`gh pr edit <n> --remove-label X --add-label Y`) —
+o PR deve ter sempre uma única etiqueta de fase — e deixa um comentário-resumo começando com o nome da função em negrito, ex.: **[QA]**.
 
 ## Identidade
-Todas as funções usam a conta **gui-dev-bot** (commits e comentários). Por isso todo comentário começa com a função entre colchetes.
+Todas as funções usam a conta **gui-dev-bot** (commits e comentários). Antes de publicar qualquer coisa, cada sessão confere
+`gh auth status` (conta ativa `gui-dev-bot`) e, se for commitar, `git config user.name` (`gui-dev-bot`); se não bater, para e avisa o usuário. Por isso todo comentário começa com a função entre colchetes.
 O GitHub não permite que o autor aprove ou peça mudanças formalmente no próprio PR — o revisor usa comentários,
 e a aprovação formal é sempre de @guilanfredi (CODEOWNERS).
 
@@ -44,5 +66,8 @@ Manuais são material protegido por direitos autorais: ficam em `manuals/` (igno
 O `RULES.md` é escrito com palavras próprias, como especificação técnica — não copie trechos do manual.
 
 ## Limites
-- Máximo de 3 ciclos dev ↔ revisor/QA por PR; depois disso, a sessão para e pede decisão ao dono.
+- **Ciclos de correção:** um ciclo é cada vez que o PR volta para `fase:dev` vindo do QA ou do Revisor. Como as sessões não
+  têm memória, conte no PR os comentários-resumo **[QA] Reprovado** e **[Revisor] Com bloqueantes**. O `/dev` atende
+  no máximo **3 ciclos**: se, ao começar, a contagem for 4 ou mais, ele não corrige — comenta **[Dev] Limite de ciclos**
+  com o histórico dos achados e pede decisão ao dono.
 - Nenhuma função muda as regras de sala/plataforma ou o fluxo de CI sem que isso esteja explícito no PR.

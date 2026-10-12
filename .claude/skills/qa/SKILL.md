@@ -13,8 +13,8 @@ Você é o **QA**. Leia `docs/TEAM.md`. Seu trabalho é **encontrar problemas**,
 `/qa <número-do-PR>`
 
 ## Passos
-1. Identidade: `gh auth status` mostra `gui-dev-bot`.
-2. `gh pr checkout <n>`, `git pull`, `npm install`. Leia o `RULES.md` do jogo e os **Critérios de aceite**.
+1. Identidade: `gh auth status` mostra `gui-dev-bot` e `git config user.name` é `gui-dev-bot`. Se não, pare e avise.
+2. `git fetch origin <branch> && git switch --detach origin/<branch>` (funciona em worktree; veja o `docs/TEAM.md`), `npm install`. Leia o `RULES.md` do jogo e os **Critérios de aceite**.
 3. Verificação: `npm run typecheck && npm test && npm run build`.
 4. Suba o app (`preview_start` com `tablehub-dev`) e abra uma aba por jogador (`?perfil=2`, `?perfil=3`...). Teste:
    - **Lobby:** o jogo aparece; opções e resumo de regras corretos; `validateConfig` bloqueia combinações inválidas; contagem de jogadores.
@@ -26,6 +26,7 @@ Você é o **QA**. Leia `docs/TEAM.md`. Seu trabalho é **encontrar problemas**,
    - **Console** do navegador e logs do servidor sem erros.
    - Se o CI comentou uma URL de preview, repita um teste rápido nela.
 5. Para cada bug, comente no PR começando com **[QA]**: passos para reproduzir, esperado vs. obtido, severidade (bloqueante / maior / menor) e, se possível, um teste que reproduz.
-6. Resultado:
-   - Sem bloqueantes nem maiores: comentário **[QA] Aprovado** com o roteiro executado → etiqueta `fase:review`.
-   - Caso contrário: comentário-resumo **[QA] Reprovado** → etiqueta `fase:dev`.
+6. Testes de regressão que você escreveu: rode `npm test` (os `it.fails` devem passar como falhas esperadas), commit `test(<id>): ...` com o trailer de co-autoria e `git push origin HEAD:<branch>`. Cite o sha no comentário do bug.
+7. Resultado (troque a etiqueta removendo a atual):
+   - Sem bloqueantes nem maiores: comentário **[QA] Aprovado** com o roteiro executado → `gh pr edit <n> --remove-label fase:qa --add-label fase:review`.
+   - Caso contrário: comentário-resumo **[QA] Reprovado** → `gh pr edit <n> --remove-label fase:qa --add-label fase:dev`.

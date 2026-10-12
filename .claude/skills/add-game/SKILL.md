@@ -10,7 +10,7 @@ description: Modo solo (uma única sessão) para implementar um novo jogo de tab
 Siga as etapas em ordem. Leia `docs/GAME_AUTHORING.md` antes de começar e use Dominó, Truco Paulista e Catan (`packages/games/*`) como referência de estilo.
 
 ## 0. Preparação
-- Crie uma branch: `git checkout -b game/<id>` a partir da `main` atualizada.
+- Crie a branch a partir da `main` remota: `git fetch origin && git switch -c game/<id> origin/main` (funciona em worktree; veja o `docs/TEAM.md`).
 - Confirme que commits sairão pela **conta bot** (`git config user.name`, `gh auth status`). Se não estiverem configurados, pare e peça ao usuário — não use a conta pessoal dele.
 
 ## 1. Entender o manual → `RULES.md`
