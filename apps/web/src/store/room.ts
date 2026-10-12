@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import type { ClientMessage, GameStatusView, RoomView, ServerMessage } from '@tablehub/shared';
 import { getName, getToken } from '../lib/session';
+import { gameSounds, roomSounds } from '../lib/soundEvents';
+import { playFirst } from '../lib/sounds';
 
 export interface GameState {
   gameId: string;
@@ -65,16 +67,21 @@ export const useRoom = create<RoomStore>((set, get) => {
       const msg = JSON.parse(ev.data as string) as ServerMessage;
       switch (msg.t) {
         case 'room':
+          playFirst(roomSounds(get().room, msg.room, msg.you));
           set((s) => ({ room: msg.room, you: msg.you, game: msg.room.status === 'lobby' ? null : s.game }));
           break;
         case 'game':
+          playFirst(gameSounds(get().game, msg, get().you));
           set({ game: { gameId: msg.gameId, seq: msg.seq, view: msg.view, status: msg.status, legal: msg.legal } });
           break;
         case 'error':
           if (msg.fatal) {
             wanted = null;
             set({ fatal: msg.message, conn: 'closed' });
-          } else showToast(msg.message);
+          } else {
+            playFirst(['error']);
+            showToast(msg.message);
+          }
           break;
         case 'kicked':
           wanted = null;
