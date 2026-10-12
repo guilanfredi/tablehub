@@ -40,7 +40,7 @@ npm run new-game -- <id> "<Nome>"
 npm run typecheck && npm test && npm run build
 ```
 - Suba o app (`preview_start` com `tablehub-dev`), abra 1 aba por jogador (`?perfil=2`, `?perfil=3`…), jogue o início de uma partida e pelo menos um caso especial; confira 375×812 e o console sem erros.
-- Rode também `node scripts/smoke.mjs http://localhost:8787`.
+- Rode também `node scripts/smoke.mjs http://localhost:8787` (no modo automático, use a porta de `TABLEHUB_WORKER_PORT`).
 
 ## 6. Auto-revisão
 - Rode `/code-review` sobre a branch e corrija o que for confirmado. Repita os testes.
