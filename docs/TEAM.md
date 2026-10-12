@@ -33,8 +33,8 @@ Mudanças que não são jogos novos (bugs, melhorias) começam direto no `/dev` 
 ## Tarefas e disparo automático
 - **Tarefas são issues.** Os modelos (Novo jogo / Bug / Melhoria) já aplicam a etiqueta inicial: `fase:spec` para jogo novo, `fase:dev` para o resto.
   O agente que pega a issue abre o PR com `Closes #<issue>` e, a partir daí, a fase vive no PR (a issue fecha sozinha no merge).
-- **Despachante** (`automation/dispatcher.ps1`, ver `docs/AUTOMATION.md`): a cada 5 min procura issues/PRs com etiqueta de fase e roda a função
-  correspondente em modo automático (`claude -p`), uma por vez, num worktree dedicado. Só pega tarefas criadas por @guilanfredi ou @gui-dev-bot.
+- **Despachante** (`automation/dispatcher/`, ver `docs/AUTOMATION.md`): fica rodando, consulta o GitHub a cada 15 s e roda a função
+  correspondente em modo automático (`claude -p`), até 3 em paralelo, cada uma com worktree e portas próprios. Só pega tarefas criadas por @guilanfredi ou @gui-dev-bot.
 - `agente:trabalhando` — colocada e removida pelo despachante enquanto uma função roda. Não mexa.
 - `aguardando-dono` — a função precisa de decisão de @guilanfredi: ela comenta a pergunta **mencionando @guilanfredi**, adiciona a etiqueta e encerra.
   O despachante ignora a tarefa até o dono comentar; então remove a etiqueta e chama a mesma função de novo.
