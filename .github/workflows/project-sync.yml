@@ -1,0 +1,94 @@
+name: Project sync
+
+# Mantém o campo Status do quadro (github.com/users/guilanfredi/projects/2) igual às etiquetas de fase.
+# O cartão é sempre a ISSUE: mudanças de etiqueta num PR atualizam as issues que ele fecha (Closes #N).
+# Fechamento/merge → "Concluído" fica a cargo dos workflows nativos do projeto.
+
+on:
+  issues:
+    types: [labeled, unlabeled, reopened]
+  pull_request:
+    types: [labeled, unlabeled, opened, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: project-sync-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    # PRs de forks não recebem segredos
+    if: github.event_name == 'issues' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/github-script@v8
+        env:
+          PROJECT_OWNER: guilanfredi
+          PROJECT_NUMBER: '2'
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            // etiqueta → opção do Status (a primeira que bater vence)
+            const MAP = [
+              ['aguardando-dono', 'Aguardando você'],
+              ['pronto-para-aprovação', 'Pronto para aprovar'],
+              ['fase:review', 'Revisão'],
+              ['fase:qa', 'QA'],
+              ['fase:dev', 'Desenvolvimento'],
+              ['fase:spec', 'Especificação'],
+            ];
+            const norm = (s) => s.normalize('NFD').replace(/\p{M}/gu, '').trim().toLowerCase();
+            const { owner, repo } = context.repo;
+            const subject = context.payload.issue ?? context.payload.pull_request;
+            const labels = subject.labels.map((l) => l.name);
+            const target = MAP.find(([label]) => labels.includes(label))?.[1];
+            if (!target) {
+              core.info(`#${subject.number} sem etiqueta de fase; nada a fazer.`);
+              return;
+            }
+
+            // issues que recebem o status
+            let issues = [];
+            if (context.payload.issue) {
+              if (subject.state === 'closed') return core.info('Issue fechada; ignorando.');
+              issues = [subject.node_id];
+            } else {
+              const r = await github.graphql(
+                `query($owner:String!,$repo:String!,$n:Int!){ repository(owner:$owner,name:$repo){ pullRequest(number:$n){
+                   closingIssuesReferences(first:10){ nodes{ id number state } } } } }`,
+                { owner, repo, n: subject.number },
+              );
+              const linked = r.repository.pullRequest.closingIssuesReferences.nodes.filter((i) => i.state === 'OPEN');
+              if (linked.length === 0) return core.info(`PR #${subject.number} não fecha nenhuma issue aberta; nada a fazer.`);
+              issues = linked.map((i) => i.id);
+              core.info(`PR #${subject.number} → issues ${linked.map((i) => '#' + i.number).join(', ')}`);
+            }
+
+            // projeto, campo Status e opção (por nome, sem diferenciar acentos/maiúsculas)
+            const p = await github.graphql(
+              `query($login:String!,$num:Int!){ user(login:$login){ projectV2(number:$num){ id
+                 field(name:"Status"){ ... on ProjectV2SingleSelectField { id options { id name } } } } } }`,
+              { login: process.env.PROJECT_OWNER, num: Number(process.env.PROJECT_NUMBER) },
+            );
+            const project = p.user.projectV2;
+            if (!project?.field) return core.setFailed('Projeto ou campo "Status" não encontrado (confira PROJECT_TOKEN e o acesso do bot ao projeto).');
+            const option = project.field.options.find((o) => norm(o.name) === norm(target));
+            if (!option) {
+              return core.setFailed(`Opção "${target}" não existe no Status. Opções atuais: ${project.field.options.map((o) => o.name).join(', ')}`);
+            }
+
+            for (const contentId of issues) {
+              // adiciona ao projeto (idempotente: devolve o item existente)
+              const add = await github.graphql(
+                `mutation($project:ID!,$content:ID!){ addProjectV2ItemById(input:{projectId:$project,contentId:$content}){ item{ id } } }`,
+                { project: project.id, content: contentId },
+              );
+              await github.graphql(
+                `mutation($project:ID!,$item:ID!,$field:ID!,$option:String!){
+                   updateProjectV2ItemFieldValue(input:{projectId:$project,itemId:$item,fieldId:$field,value:{singleSelectOptionId:$option}}){ projectV2Item{ id } } }`,
+                { project: project.id, item: add.addProjectV2ItemById.item.id, field: project.field.id, option: option.id },
+              );
+            }
+            core.info(`Status → "${option.name}"`);
