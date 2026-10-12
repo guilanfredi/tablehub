@@ -56,7 +56,8 @@ test('perfil: entrar por link escolhe avatar; troca no lobby aparece para todos;
 
   await beto.locator('.player-item:has-text("Beto") .avatar-button').click();
   await beto.getByRole('option', { name: 'Sapo', exact: true }).click();
-  await expect.poll(() => avatarOf(ana, '.player-item:has-text("Beto")'), { timeout: 1000 }).toBe('Sapo');
+  // 1 s no servidor local; folga para rodar contra o preview remoto
+  await expect.poll(() => avatarOf(ana, '.player-item:has-text("Beto")'), { timeout: 3000 }).toBe('Sapo');
   await beto.reload();
   await expect.poll(() => avatarOf(beto, '.player-item:has-text("Beto")')).toBe('Sapo');
   expect(errors).toEqual([]);
@@ -109,6 +110,8 @@ test('aviso de vez: com a aba em segundo plano, título pisca e notificação sa
       close() {}
     }
     (window as unknown as { Notification: unknown }).Notification = FakeNotification;
+    // no build de produção há service worker; força o caminho da API direta para observar a notificação
+    if (navigator.serviceWorker) navigator.serviceWorker.getRegistration = async () => undefined;
   });
   await createRoom(ana);
   await chooseGame(ana, 'Dominó');

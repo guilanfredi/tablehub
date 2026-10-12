@@ -72,10 +72,10 @@ export function Lobby() {
                   <span className={`dot ${p.connected ? 'dot-on' : ''}`} title={p.connected ? 'Conectado' : 'Desconectado'} />
                   {p.id === you ? (
                     <button type="button" className="avatar-button" aria-label="Trocar avatar" aria-expanded={picking} onClick={() => setPicking((v) => !v)}>
-                      <Avatar id={p.avatar} size={36} />
+                      <Avatar id={p.avatar} size={32} />
                     </button>
                   ) : (
-                    <Avatar id={p.avatar} size={36} bot={p.bot} dim={!p.connected} />
+                    <Avatar id={p.avatar} size={32} bot={p.bot} dim={!p.connected} />
                   )}
                   <span className="name">
                     {p.name}
