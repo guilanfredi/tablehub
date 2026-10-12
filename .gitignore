@@ -8,3 +8,7 @@ coverage/
 
 # Manuais de jogos (material protegido; nunca versionar)
 manuals/
+test-results/
+playwright-report/
+automation/logs/
+automation/state/

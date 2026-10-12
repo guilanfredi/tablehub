@@ -1,0 +1,12 @@
+name: Bug
+description: Algo não funciona. O Desenvolvedor começa automaticamente.
+title: "Bug: "
+labels: ["fase:dev"]
+body:
+  - type: textarea
+    id: oque
+    attributes:
+      label: O que aconteceu
+      description: Passos para reproduzir, o esperado e o obtido. Jogo, nº de jogadores, celular ou desktop.
+    validations:
+      required: true

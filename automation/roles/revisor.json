@@ -1,0 +1,51 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Skill",
+      "TodoWrite",
+      "Bash(gh *)",
+      "Bash(git *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(node *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(mkdir *)"
+    ],
+    "deny": [
+      "Bash(gh pr merge *)",
+      "Bash(gh repo *)",
+      "Bash(gh secret *)",
+      "Bash(gh auth login*)",
+      "Bash(gh auth logout*)",
+      "Bash(gh auth switch*)",
+      "Bash(gh auth token*)",
+      "Bash(gh auth refresh*)",
+      "Bash(gh release *)",
+      "Bash(gh api -X DELETE repos/guilanfredi/tablehub/git*)",
+      "Bash(gh workflow *)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push origin main*)",
+      "Bash(git push origin HEAD:main*)",
+      "Bash(git config --global*)",
+      "Bash(rm -rf *)",
+      "Bash(npx wrangler *)",
+      "Bash(npm run deploy*)",
+      "WebFetch",
+      "WebSearch",
+      "Edit",
+      "Write",
+      "NotebookEdit",
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(npm install*)",
+      "Bash(gh api *merge*)",
+      "Bash(gh api *protection*)"
+    ],
+    "defaultMode": "default"
+  }
+}
