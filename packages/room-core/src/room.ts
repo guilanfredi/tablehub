@@ -3,7 +3,9 @@ import {
   defaultOptions,
   isActionError,
   normalizeOptions,
+  Rng,
   runAction,
+  type BotRegistry,
   type GameDefinition,
   type GameOptions,
 } from '@tablehub/game-sdk';
@@ -30,6 +32,8 @@ export interface RoomPlayer {
   readyAtVersion: number;
   connected: boolean;
   disconnectedAt: number | null;
+  /** Jogador controlado pelo servidor (estratégia em `@tablehub/bots`). */
+  bot?: boolean;
 }
 
 export interface RoomGame {
@@ -80,7 +84,10 @@ export function createRoom(code: string, now: number): RoomData {
  * Todos os métodos mutam o `RoomData` recebido.
  */
 export class RoomService {
-  constructor(private readonly registry: GameRegistry) {}
+  constructor(
+    private readonly registry: GameRegistry,
+    private readonly bots: BotRegistry = {},
+  ) {}
 
   game(room: RoomData): GameDefinition | null {
     return room.gameId ? (this.registry[room.gameId] ?? null) : null;
@@ -97,6 +104,22 @@ export class RoomService {
   capacity(room: RoomData): number {
     const def = this.game(room);
     return def ? Math.min(def.maxPlayers, MAX_ROOM_PLAYERS) : MAX_ROOM_PLAYERS;
+  }
+
+  botsAvailable(room: RoomData): boolean {
+    return room.gameId !== null && Boolean(this.bots[room.gameId]);
+  }
+
+  addBot(room: RoomData, by: string, now: number): Result {
+    if (!this.isOwner(room, by)) return fail('Só o dono da sala pode adicionar bots.');
+    if (room.status === 'playing') return fail('A partida está em andamento.');
+    if (!this.botsAvailable(room)) return fail('Este jogo ainda não tem bots.');
+    if (room.players.length >= this.capacity(room)) return fail('A sala está cheia.');
+    let n = 1;
+    while (room.players.some((p) => p.id === `bot-${n}`)) n++;
+    room.players.push({ id: `bot-${n}`, name: `Bot ${n}`, ready: true, readyAtVersion: room.optionsVersion, connected: true, disconnectedAt: null, bot: true });
+    room.updatedAt = now;
+    return OK;
   }
 
   join(room: RoomData, id: string, name: string, now: number): Result {
@@ -157,7 +180,8 @@ export class RoomService {
   }
 
   private transferOwnership(room: RoomData): void {
-    const next = room.players.find((p) => p.connected) ?? room.players[0];
+    const humans = room.players.filter((p) => !p.bot);
+    const next = humans.find((p) => p.connected) ?? humans[0];
     room.ownerId = next ? next.id : null;
   }
 
@@ -168,6 +192,7 @@ export class RoomService {
     if (room.gameId === gameId) return OK;
     room.gameId = gameId;
     room.options = gameId ? defaultOptions(this.registry[gameId].optionsSchema) : {};
+    if (!this.botsAvailable(room)) room.players = room.players.filter((p) => !p.bot);
     this.bumpOptions(room, ['__game__']);
     if (room.status === 'finished') this.resetToLobby(room);
     return OK;
@@ -205,7 +230,7 @@ export class RoomService {
 
   setReady(room: RoomData, by: string, ready: boolean): Result {
     const p = this.player(room, by);
-    if (!p) return fail('Você não está nesta sala.');
+    if (!p || p.bot) return fail('Você não está nesta sala.');
     if (room.status === 'playing') return fail('A partida já começou.');
     p.ready = ready;
     p.readyAtVersion = room.optionsVersion;
@@ -270,7 +295,39 @@ export class RoomService {
   private resetToLobby(room: RoomData): void {
     room.status = 'lobby';
     room.game = null;
-    for (const p of room.players) p.ready = false;
+    for (const p of room.players) p.ready = Boolean(p.bot);
+  }
+
+  /** Bot que deve agir agora, ou null. Bots esperam enquanto nenhum humano estiver conectado. */
+  pendingBot(room: RoomData): string | null {
+    if (room.status !== 'playing' || !room.game) return null;
+    if (!room.players.some((p) => !p.bot && p.connected)) return null;
+    const def = this.registry[room.game.gameId];
+    if (!def || !this.bots[def.id]) return null;
+    const current = def.getStatus(room.game.state).currentPlayers;
+    return room.players.find((p) => p.bot && current.includes(p.id))?.id ?? null;
+  }
+
+  /**
+   * Faz um bot jogar. Ele recebe só o que um humano receberia (visão e ações legais) e a ação
+   * passa pela mesma validação; se a estratégia falhar, joga a primeira ação legal.
+   */
+  playBot(room: RoomData, seed: number, now: number): Result {
+    const botId = this.pendingBot(room);
+    if (!botId) return fail('Nenhum bot precisa jogar agora.');
+    const def = this.registry[room.game!.gameId];
+    const state = room.game!.state;
+    const legal = def.getLegalActions(state, botId);
+    if (legal.length === 0) return fail('O bot não tem ações legais.');
+    let action: unknown;
+    try {
+      const turn = { playerId: botId, view: def.getPlayerView(state, botId), status: def.getStatus(state), legal };
+      action = this.bots[def.id].chooseAction(turn, new Rng(seed));
+    } catch {
+      action = legal[0];
+    }
+    const result = this.action(room, botId, action, now);
+    return result.ok ? result : this.action(room, botId, legal[0], now);
   }
 
   /**
@@ -291,13 +348,13 @@ export class RoomService {
     }
     const owner = room.ownerId ? this.player(room, room.ownerId) : undefined;
     if (owner && !owner.connected && owner.disconnectedAt && now - owner.disconnectedAt >= OWNER_GRACE_MS) {
-      const next = room.players.find((p) => p.connected);
+      const next = room.players.find((p) => p.connected && !p.bot);
       if (next) {
         room.ownerId = next.id;
         changed = true;
       }
     }
-    const anyoneConnected = room.players.some((p) => p.connected);
+    const anyoneConnected = room.players.some((p) => p.connected && !p.bot);
     if (!anyoneConnected && now - room.updatedAt >= ROOM_IDLE_TTL_MS) return { expired: true, changed, nextCheckAt: null };
 
     let nextCheckAt: number | null = null;
@@ -313,7 +370,8 @@ export class RoomService {
     return {
       code: room.code,
       ownerId: room.ownerId,
-      players: room.players.map(({ id, name, ready, readyAtVersion, connected }) => ({ id, name, ready, readyAtVersion, connected })),
+      players: room.players.map(({ id, name, ready, readyAtVersion, connected, bot }) => ({ id, name, ready, readyAtVersion, connected, bot: Boolean(bot) })),
+      botsAvailable: this.botsAvailable(room),
       gameId: room.gameId,
       options: room.options,
       optionsVersion: room.optionsVersion,

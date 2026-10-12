@@ -1,12 +1,15 @@
 import { DurableObject } from 'cloudflare:workers';
 import { randomSeed } from '@tablehub/game-sdk';
+import { BOTS } from '@tablehub/bots';
 import { GAMES } from '@tablehub/games';
 import { createRoom, OWNER_GRACE_MS, ROOM_IDLE_TTL_MS, RoomService, type Result, type RoomData } from '@tablehub/room-core';
 import { clientMessageSchema, type ClientMessage, type ServerMessage } from '@tablehub/shared';
 import type { Env } from './env';
 
-const svc = new RoomService(GAMES);
+const svc = new RoomService(GAMES, BOTS);
 const MAX_MESSAGE_BYTES = 16 * 1024;
+/** Pausa antes de cada jogada de bot, para os humanos acompanharem. */
+const BOT_DELAY_MS = 1000;
 
 interface Attachment {
   playerId: string | null;
@@ -101,6 +104,9 @@ export class RoomDurableObject extends DurableObject<Env> {
         result = svc.kick(room, playerId, msg.playerId, now);
         if (result.ok) this.dropPlayer(msg.playerId, { t: 'kicked' });
         break;
+      case 'addBot':
+        result = svc.addBot(room, playerId, now);
+        break;
       case 'ready':
         result = svc.setReady(room, playerId, msg.ready);
         break;
@@ -172,6 +178,7 @@ export class RoomDurableObject extends DurableObject<Env> {
       await this.ctx.storage.deleteAll();
       return;
     }
+    if (svc.pendingBot(this.room)) svc.playBot(this.room, randomSeed(), Date.now());
     await this.commit();
   }
 
@@ -236,7 +243,7 @@ export class RoomDurableObject extends DurableObject<Env> {
   private async scheduleAlarm() {
     const room = this.room;
     if (!room) return;
-    const connected = room.players.filter((p) => p.connected);
+    const connected = room.players.filter((p) => p.connected && !p.bot);
     let next: number | null = null;
     if (connected.length === 0) next = room.updatedAt + ROOM_IDLE_TTL_MS;
     else {
@@ -245,7 +252,9 @@ export class RoomDurableObject extends DurableObject<Env> {
       const stale = room.players.filter((p) => !p.connected && p.disconnectedAt).map((p) => p.disconnectedAt! + ROOM_IDLE_TTL_MS);
       if (room.status === 'lobby' && stale.length) next = Math.min(next ?? Infinity, ...stale);
     }
+    const now = Date.now();
+    if (svc.pendingBot(room)) next = Math.min(next ?? Infinity, now + BOT_DELAY_MS);
     if (next === null) await this.ctx.storage.deleteAlarm();
-    else await this.ctx.storage.setAlarm(Math.max(next, Date.now() + 1000));
+    else await this.ctx.storage.setAlarm(Math.max(next, now + BOT_DELAY_MS));
   }
 }

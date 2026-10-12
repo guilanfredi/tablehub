@@ -30,6 +30,7 @@ export const clientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('setOptions'), options: z.record(z.string(), optionValue) }),
   z.object({ t: z.literal('movePlayer'), playerId: z.string().max(64), toIndex: z.number().int().min(0).max(MAX_ROOM_PLAYERS) }),
   z.object({ t: z.literal('kick'), playerId: z.string().max(64) }),
+  z.object({ t: z.literal('addBot') }),
   z.object({ t: z.literal('ready'), ready: z.boolean() }),
   z.object({ t: z.literal('start') }),
   z.object({ t: z.literal('action'), action: z.object({ type: z.string().max(40) }).passthrough() }),
@@ -49,6 +50,7 @@ export interface RoomPlayerView {
   /** Versão das opções quando o jogador marcou "pronto". */
   readyAtVersion: number;
   connected: boolean;
+  bot: boolean;
 }
 
 export interface OptionsChange {
@@ -75,6 +77,8 @@ export interface RoomView {
   lastChange: OptionsChange | null;
   status: RoomStatus;
   lastResult: MatchResult | null;
+  /** O jogo escolhido aceita bots. */
+  botsAvailable: boolean;
 }
 
 export interface GameStatusView {

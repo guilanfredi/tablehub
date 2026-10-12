@@ -56,6 +56,12 @@ Regras de ouro:
 - Utilitários prontos: `game-sdk/hexgrid` (tabuleiros hexagonais), `PlayingCard` (truco), `DominoTile`.
 - Arte própria (SVG). Nunca use arte, logotipos ou textos protegidos dos jogos comerciais.
 
+## Bots (opcional)
+
+- Estratégias ficam em `packages/bots/src/<id>.ts`, implementando `BotStrategy` do `game-sdk`, e são registradas em `BOTS`.
+- O bot recebe o mesmo que a interface de um humano (`view`, `status`, `legal`) e devolve uma ação; a sala valida como qualquer jogada.
+- Só jogos registrados em `BOTS` mostram "Adicionar bot" no lobby.
+
 ## 5. Checklist antes do PR
 
 ```bash

@@ -21,7 +21,7 @@ function startBlocker(room: RoomView, def: GameDefinition | null): string | null
   if (countErr) return countErr;
   const cfg = def.validateConfig(room.options, room.players.length);
   if (cfg) return cfg;
-  const notReady = room.players.filter((p) => p.id !== room.ownerId && !p.ready);
+  const notReady = room.players.filter((p) => p.id !== room.ownerId && !p.ready && !p.bot);
   if (notReady.length) return `Aguardando: ${notReady.map((p) => p.name).join(', ')}`;
   return null;
 }
@@ -72,7 +72,9 @@ export function Lobby() {
                     {p.id === you && <span className="muted small"> (você)</span>}
                   </span>
                   {seatLabel && <span className="badge">{seatLabel}</span>}
-                  {isRoomOwner ? (
+                  {p.bot ? (
+                    <span className="badge">Bot</span>
+                  ) : isRoomOwner ? (
                     <span className="badge">Dono</span>
                   ) : p.ready ? (
                     <span className={`badge ${stale ? 'badge-warn' : 'badge-ok'}`} title={stale ? 'Marcou pronto antes da última alteração das regras' : ''}>
@@ -105,6 +107,11 @@ export function Lobby() {
               );
             })}
           </ul>
+          {isOwner && room.botsAvailable && def && room.players.length < def.maxPlayers && (
+            <button className="btn btn-sm" onClick={() => send({ t: 'addBot' })}>
+              Adicionar bot
+            </button>
+          )}
           {isOwner && room.players.length > 1 && <p className="muted small" style={{ margin: 0 }}>Use as setas para definir a ordem na mesa (e as duplas, quando houver).</p>}
         </div>
         {room.lastResult && <LastResult />}

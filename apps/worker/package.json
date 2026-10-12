@@ -9,6 +9,7 @@
     "types": "wrangler types"
   },
   "dependencies": {
+    "@tablehub/bots": "*",
     "@tablehub/game-sdk": "*",
     "@tablehub/games": "*",
     "@tablehub/room-core": "*",
