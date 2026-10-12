@@ -34,11 +34,6 @@ jobs:
       - run: npm run build
       - name: Publica em produção
         id: deploy
-        working-directory: apps/worker
-        run: |
-          npx wrangler deploy 2>&1 | tee deploy.log
-          url=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' deploy.log | head -1)
-          echo "url=$url" >> "$GITHUB_OUTPUT"
+        run: scripts/deploy.sh
       - name: Smoke test em produção
-        if: steps.deploy.outputs.url != ''
         run: node scripts/smoke.mjs "${{ steps.deploy.outputs.url }}"
