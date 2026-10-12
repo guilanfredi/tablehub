@@ -8,7 +8,9 @@ Plataforma PWA para jogar boardgames em salas (Dominó, Truco Paulista, Catan…
   Antes de commitar, confira `git config user.name` / `user.email` (identidade do bot neste repo) e `gh auth status` (bot ativo).
   Se não estiver configurado, pare e peça ao usuário — não use a conta pessoal dele.
 - PR aprovado + CI verde → merge → deploy automático (`.github/workflows/deploy.yml`).
-- Novos jogos: siga a skill `.claude/skills/add-game` e `docs/GAME_AUTHORING.md`.
+- **Time de agentes** (`docs/TEAM.md`): cada função roda numa sessão própria — `/analista`, `/dev`, `/qa`, `/revisor`. O PR é o quadro de passagem (etiquetas `fase:*` + comentários com a função entre colchetes).
+- Manuais de jogos ficam em `manuals/` (fora do git; material protegido).
+- Detalhes técnicos de jogos: `docs/GAME_AUTHORING.md`. A skill `add-game` é o modo solo (uma sessão faz tudo).
 
 ## Comandos
 ```bash

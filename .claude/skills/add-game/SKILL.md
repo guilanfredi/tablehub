@@ -1,9 +1,11 @@
 ---
 name: add-game
-description: Implementa um novo jogo de tabuleiro no TableHub a partir do manual (PDF, imagens ou texto) — especificação, motor, testes, interface, revisão e PR. Use quando o usuário anexar um manual ou pedir para adicionar um jogo.
+description: Modo solo (uma única sessão) para implementar um novo jogo de tabuleiro no TableHub a partir do manual (PDF, imagens ou texto) — especificação, motor, testes, interface, revisão e PR. Use apenas quando o usuário pedir explicitamente que uma única sessão faça tudo; o padrão é /analista.
 ---
 
-# Adicionar um jogo a partir do manual
+# Adicionar um jogo a partir do manual (modo solo)
+
+> O fluxo padrão do projeto é o time de agentes em sessões separadas (`docs/TEAM.md`: /analista → /dev → /qa → /revisor). Use este modo solo só quando o usuário pedir explicitamente que uma sessão faça tudo.
 
 Siga as etapas em ordem. Leia `docs/GAME_AUTHORING.md` antes de começar e use Dominó, Truco Paulista e Catan (`packages/games/*`) como referência de estilo.
 
