@@ -859,6 +859,19 @@ describe('cartas Constantes', () => {
     expect(M(s, 'p2').hp).toBe(10);
   });
 
+  // [QA] achado do PR #21: o dano letal elimina o dono dos Jatos antes da decisão de ceder
+  it.fails('Jatos: ceder Tóquio evita também o dano que seria letal', () => {
+    let s = game(3);
+    M(s, 'p2').place = 'city';
+    M(s, 'p2').hp = 2;
+    give(s, 'p2', 'jatos');
+    s = resolveWith(s, ['claw', 'claw', 'claw', '1', '2', '3']);
+    expect(status(s).currentPlayers).toEqual(['p2']);
+    s = play(s, 'p2', { type: 'yield', leave: true });
+    expect(M(s, 'p2').alive).toBe(true);
+    expect(M(s, 'p2').hp).toBe(2);
+  });
+
   it('Metabolismo Alienígena: cartas custam 1 a menos', () => {
     let s = game();
     give(s, 'p1', 'metabolismo-alienigena');
