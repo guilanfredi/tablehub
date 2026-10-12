@@ -231,7 +231,7 @@ Os demais valem para o PR de cada parte.
    sino.
 
 **Parte B**
-9. Dominó, Truco e King of Tokyo usam a mesa comum: você embaixo, demais em sentido horário, anel no jogador da
+9. Dominó e Truco (e o King of Tokyo, na Parte D) usam a mesa comum: você embaixo, demais em sentido horário, anel no jogador da
    vez; em 375 px de largura não há rolagem horizontal e a mão fica visível sem rolar.
 10. Os quatro jogos mostram o histórico no painel comum; após uma jogada de outro jogador o contador de não lidas
     aumenta; abrir o painel zera.
