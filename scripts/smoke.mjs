@@ -8,6 +8,23 @@ const base = (process.argv[2] ?? 'http://localhost:8787').replace(/\/$/, '');
 const wsBase = base.replace(/^http/, 'ws');
 const TIMEOUT = 15000;
 
+/** Requisição JSON com novas tentativas: um Worker recém-publicado pode levar alguns segundos para propagar. */
+async function fetchJson(url, init, attempts = 20) {
+  let last;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const r = await fetch(url, init);
+      const text = await r.text();
+      if (r.ok) return JSON.parse(text);
+      last = `HTTP ${r.status}`;
+    } catch (e) {
+      last = e.message;
+    }
+    await new Promise((res) => setTimeout(res, 3000));
+  }
+  throw new Error(`${url} não respondeu JSON válido após ${attempts} tentativas (${last})`);
+}
+
 function fail(msg) {
   console.error(`✗ ${msg}`);
   process.exit(1);
@@ -53,14 +70,14 @@ function client(code, name) {
 }
 
 try {
-  const health = await fetch(`${base}/api/health`).then((r) => r.json());
+  const health = await fetchJson(`${base}/api/health`);
   if (!health.ok) fail('health');
   console.log('✓ /api/health');
 
-  const { code } = await fetch(`${base}/api/rooms`, { method: 'POST' }).then((r) => r.json());
+  const { code } = await fetchJson(`${base}/api/rooms`, { method: 'POST' });
   if (!/^[A-Z0-9]{5}$/.test(code ?? '')) fail(`código de sala inválido: ${code}`);
   console.log(`✓ sala criada: ${code}`);
-  const exists = await fetch(`${base}/api/rooms/${code}`).then((r) => r.json());
+  const exists = await fetchJson(`${base}/api/rooms/${code}`);
   if (!exists.exists) fail('sala não encontrada após criação');
 
   const a = client(code, 'Ana');
