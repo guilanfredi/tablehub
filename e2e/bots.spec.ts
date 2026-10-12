@@ -22,16 +22,28 @@ test('bots: dono adiciona um bot ao Dominó e o bot joga na sua vez', async ({ b
   expect(errors).toEqual([]);
 });
 
-test('bots: Truco aceita bots e Catan não oferece', async ({ browser }) => {
+test('bots: Truco aceita bots', async ({ browser }) => {
   const ana = await newPlayer(browser, 'Ana');
   await createRoom(ana);
-  await chooseGame(ana, 'Catan');
-  await expect(ana.getByRole('button', { name: 'Adicionar bot' })).toHaveCount(0);
   await chooseGame(ana, 'Truco');
   await ana.getByRole('button', { name: 'Adicionar bot' }).click();
   await expect(ana.getByText('Bot 1')).toBeVisible();
   await startGame(ana);
 });
+
+for (const [game, bots] of [['Catan', 2], ['King of Tokyo', 1]] as const) {
+  test(`bots: ${game} aceita bots e eles jogam até a vez do humano`, async ({ browser }) => {
+    const ana = await newPlayer(browser, 'Ana');
+    const errors = failOnConsoleErrors(ana);
+    await createRoom(ana);
+    await chooseGame(ana, game);
+    for (let i = 0; i < bots; i++) await ana.getByRole('button', { name: 'Adicionar bot' }).click();
+    await expect(ana.locator('.player-item', { hasText: `Bot ${bots}` })).toBeVisible();
+    await startGame(ana);
+    await expect(ana.locator('.status-pill.my-turn')).toBeVisible({ timeout: 30_000 });
+    expect(errors).toEqual([]);
+  });
+}
 
 // ---------- QA ----------
 
