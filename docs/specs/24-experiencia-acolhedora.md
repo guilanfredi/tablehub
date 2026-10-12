@@ -17,9 +17,9 @@ A issue reúne oito pedidos. Para manter cada entrega testável, a especificaç�
 | Parte | Itens da issue | Conteúdo | Entrega |
 |---|---|---|---|
 | A — Perfil e bots | 1, 2, 5 | avatares, perfil salvo, bots com nome/avatar/tempo de pensar, aviso de vez | **este PR (#25)** |
-| C — Dominó | 3, 7 | monte visual e compra pelo jogador | issue própria, 1ª na fila |
-| B — Mesa comum, histórico e animações | 4, 6, 8 (base) | componente de mesa, painel de histórico, animações | issue própria, depois de A e C |
-| D — Mesa do King of Tokyo | 8 | tabuleiro de Tóquio, monstros ao redor, mercado em miniatura | issue própria, depende de B |
+| C — Dominó | 3, 7 | monte visual e compra pelo jogador | #27, 1ª na fila |
+| B — Mesa comum, histórico e animações | 4, 6, 8 (base) | componente de mesa, painel de histórico, animações | #28, depois de A e C |
+| D — Mesa do King of Tokyo | 8 | tabuleiro de Tóquio, monstros ao redor, mercado em miniatura | #29, depende de B |
 
 ---
 
@@ -201,7 +201,7 @@ peça aparece na mão sem nenhum retorno visual, o que provavelmente foi percebi
 
 ## Dúvidas (todas resolvidas pelo dono em 12/10/2026)
 1. **Entrega** (tudo neste PR / A + C / um PR por parte) → **um PR por parte.** Este PR (#25) entrega a Parte A;
-   C, B e D viram issues próprias, nessa ordem (D depende de B).
+   C (#27), B (#28) e D (#29) viram issues próprias, nessa ordem (D depende de B).
 2. **Tema dos avatares** (animais / pessoas / misto) → **animais** (lista em A1).
 3. **Compra no dominó** (comprar tocando no monte / poder comprar mesmo tendo peça / outra) → **comprar tocando
    no monte**, com aviso e animação (C1). Nenhuma regra do motor muda.
