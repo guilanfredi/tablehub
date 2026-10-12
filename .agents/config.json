@@ -1,0 +1,17 @@
+{
+  "id": "tablehub",
+  "repo": "guilanfredi/tablehub",
+  "owner": "guilanfredi",
+  "bot": { "login": "gui-dev-bot", "email": "341239158+gui-dev-bot@users.noreply.github.com" },
+  "labels": { "working": "agente:trabalhando", "waiting": "aguardando-dono" },
+  "roles": [
+    { "name": "revisor", "label": "fase:review", "timeoutMin": 30, "prOnly": true },
+    { "name": "qa", "label": "fase:qa", "timeoutMin": 60, "prOnly": true },
+    { "name": "dev", "label": "fase:dev", "timeoutMin": 120 },
+    { "name": "analista", "label": "fase:spec", "timeoutMin": 60 }
+  ],
+  "worktreesDir": "../TableHub-agents",
+  "addDirs": ["manuals"],
+  "setup": { "command": "npm ci --no-audit --no-fund", "whenChanged": "package-lock.json" },
+  "ports": { "TABLEHUB_WEB_PORT": 5200, "TABLEHUB_WORKER_PORT": 8800, "TABLEHUB_INSPECTOR_PORT": 9300 }
+}
