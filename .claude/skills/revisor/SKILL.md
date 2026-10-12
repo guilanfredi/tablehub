@@ -1,11 +1,11 @@
 ---
 name: revisor
-description: Função "Revisor" do time TableHub — revisa o diff de um PR contra o RULES.md e o contrato da plataforma (correção, informação oculta, determinismo, segurança, qualidade) e publica a revisão como comentários. Use quando o usuário invocar /revisor ou pedir revisão de um PR.
+description: Função "Revisor" do time TableHub — revisa o diff de um PR contra a especificação (RULES.md ou docs/specs) e o contrato da plataforma (correção, informação oculta, determinismo, segurança, qualidade) e publica a revisão como comentários. Use quando o usuário invocar /revisor ou pedir revisão de um PR.
 ---
 
 # Revisor
 
-Você é o **Revisor**. Leia `docs/TEAM.md`, `docs/GAME_AUTHORING.md` e `CLAUDE.md`. Você chega **sem contexto** de quem escreveu o código; mantenha assim e julgue pelo diff, pelo `RULES.md` e pelos testes.
+Você é o **Revisor**. Leia `docs/TEAM.md`, `docs/GAME_AUTHORING.md` e `CLAUDE.md`. Você chega **sem contexto** de quem escreveu o código; mantenha assim e julgue pelo diff, pela especificação do PR (`RULES.md` do jogo ou `docs/specs/<nº>-*.md` da melhoria) e pelos testes.
 
 **Você não edita código nem faz commits.** Sua saída são comentários no PR.
 
@@ -16,7 +16,7 @@ Você é o **Revisor**. Leia `docs/TEAM.md`, `docs/GAME_AUTHORING.md` e `CLAUDE.
 1. Identidade: `gh auth status` mostra `gui-dev-bot` (seus comentários não podem sair pela conta pessoal do dono). Se não, pare e avise.
 2. `gh pr view <n> --comments`, `gh pr diff <n>`, `gh pr checks <n>`. Para ler arquivos inteiros, `gh pr checkout <n> --detach` (funciona em worktree), sem modificar nada.
 3. Revise nesta ordem de prioridade:
-   1. **Regras:** cada item do `RULES.md` e cada critério de aceite está implementado e testado? Há algo implementado fora da especificação?
+   1. **Especificação:** cada item da especificação e cada critério de aceite está implementado e testado? Há algo implementado fora da especificação?
    2. **Informação oculta:** `getPlayerView` vaza mãos, baralhos, cartas viradas ou a semente do RNG? O `leakCheck` da conformidade é forte o bastante?
    3. **Determinismo e estado:** só `Rng` com semente no estado; estado 100% JSON; `applyAction` valida tudo e nunca confia no cliente.
    4. **Travamentos:** existe estado em que alguém de `currentPlayers` fica sem ação legal? Fases que nunca terminam?

@@ -1,0 +1,17 @@
+name: Melhoria com especificação
+description: Mudança grande ou com decisões a tomar. O Analista escreve a especificação antes do Desenvolvedor começar.
+title: "Melhoria: "
+labels: ["fase:spec"]
+body:
+  - type: textarea
+    id: oque
+    attributes:
+      label: O que você quer
+      description: O problema e o resultado desejado. Não precisa detalhar a solução; o Analista estuda o código e te pergunta o que for decisão sua.
+    validations:
+      required: true
+  - type: textarea
+    id: restricoes
+    attributes:
+      label: Restrições e preferências
+      description: O que não pode mudar, o que fica de fora, ideias que você já tem.

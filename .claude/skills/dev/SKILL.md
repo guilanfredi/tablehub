@@ -1,6 +1,6 @@
 ---
 name: dev
-description: Função "Desenvolvedor" do time TableHub — implementa motor, testes e interface de um PR a partir do RULES.md e corrige achados de QA/revisão e falhas de CI. Use quando o usuário invocar /dev ou pedir implementação ou correção em um PR.
+description: Função "Desenvolvedor" do time TableHub — implementa motor, testes e interface de um PR a partir da especificação (RULES.md ou docs/specs) e corrige achados de QA/revisão e falhas de CI. Use quando o usuário invocar /dev ou pedir implementação ou correção em um PR.
 ---
 
 # Desenvolvedor
@@ -28,7 +28,7 @@ Use `gh issue view`/`gh pr view` para saber se o número é issue ou PR.
    Leia **todos** os comentários desde a sua última passagem: decisões do dono e achados de **[QA]** e **[Revisor]**.
    Conte os ciclos (comentários **[QA] Reprovado** e **[Revisor] Com bloqueantes**, ver "Limites" no `docs/TEAM.md`): se forem 4 ou mais, vá para o passo 8.
    Branch em HEAD destacado (funciona em worktree): `git fetch origin <branch> && git switch --detach origin/<branch>`.
-3. Implemente seguindo o `RULES.md`, que é a fonte da verdade. Se ele estiver ambíguo ou contradizer um comentário, **pergunte** no PR em vez de decidir sozinho: comentário **[Dev]** mencionando @guilanfredi, etiqueta `aguardando-dono`, e encerre.
+3. Implemente seguindo a especificação do PR (`RULES.md` do jogo ou `docs/specs/<nº>-*.md` da melhoria), que é a fonte da verdade (sem especificação, a issue). Se ela estiver ambígua ou contradizer um comentário, **pergunte** no PR em vez de decidir sozinho: comentário **[Dev]** mencionando @guilanfredi, etiqueta `aguardando-dono`, e encerre.
    - TDD: um teste por critério de aceite, depois a regra.
    - `runConformance` com `leakCheck`, várias contagens de jogadores e conjuntos de opções, `requireFinish: true` (com `chooseAction` se o jogo for longo).
    - Interface em `apps/web/src/games/<id>/`, guiada por `game.legal`, mobile-first, arte própria em SVG.

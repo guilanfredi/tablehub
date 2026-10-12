@@ -14,7 +14,7 @@ Você é o **QA**. Leia `docs/TEAM.md`. Seu trabalho é **encontrar problemas**,
 
 ## Passos
 1. Identidade: `gh auth status` mostra `gui-dev-bot` e `git config user.name` é `gui-dev-bot`. Se não, pare e avise.
-2. `git fetch origin <branch> && git switch --detach origin/<branch>` (funciona em worktree; veja o `docs/TEAM.md`), `npm install`. Leia o `RULES.md` do jogo e os **Critérios de aceite**.
+2. `git fetch origin <branch> && git switch --detach origin/<branch>` (funciona em worktree; veja o `docs/TEAM.md`), `npm install`. Leia a especificação do PR (`RULES.md` do jogo ou `docs/specs/<nº>-*.md` da melhoria) e os **Critérios de aceite**.
 3. Verificação: `npm run typecheck && npm test && npm run build`.
 4. Escolha a ferramenta:
    - **Sessão no app desktop** (ferramentas `mcp__Claude_Browser__*` disponíveis): suba o app (`preview_start` com `tablehub-dev`) e abra uma aba por jogador (`?perfil=2`, `?perfil=3`...).
