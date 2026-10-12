@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { BotStrategy, PlayerTurn } from '@tablehub/game-sdk';
 import { runConformance } from '@tablehub/game-sdk/testing';
 import { createRoom, OWNER_GRACE_MS, ROOM_IDLE_TTL_MS, RoomService } from './room';
 import { counterGame } from './testGame';
@@ -130,6 +131,112 @@ describe('RoomService', () => {
     const other = cur === 'a' ? 'b' : 'a';
     expect(svc.gameViewFor(room, cur)!.legal.length).toBe(2);
     expect(svc.gameViewFor(room, other)!.legal.length).toBe(0);
+  });
+
+  describe('bots', () => {
+    const seen: PlayerTurn[] = [];
+    const counterBot: BotStrategy = {
+      gameId: 'counter',
+      chooseAction: (turn) => {
+        seen.push(turn);
+        return { type: 'add', n: 2 };
+      },
+    };
+    const brokenBot: BotStrategy = { gameId: 'counter', chooseAction: () => ({ type: 'hack' }) };
+    const botSvc = new RoomService({ counter: counterGame, other: { ...counterGame, id: 'other' } }, { counter: counterBot });
+
+    function botLobby(svcToUse = botSvc) {
+      const room = createRoom('ABCDE', 0);
+      svcToUse.join(room, 'a', 'Ana', 0);
+      svcToUse.setGame(room, 'a', 'counter');
+      return room;
+    }
+
+    it('só o dono adiciona bots, e só em jogos com estratégia', () => {
+      const room = botLobby();
+      expect(botSvc.addBot(room, 'b', 0).ok).toBe(false);
+      expect(botSvc.addBot(room, 'a', 0).ok).toBe(true);
+      expect(room.players[1]).toMatchObject({ id: 'bot-1', name: 'Bot 1', bot: true, ready: true, connected: true });
+      expect(botSvc.toView(room).botsAvailable).toBe(true);
+      expect(botSvc.toView(room).players[1].bot).toBe(true);
+      const plain = botLobby(svc);
+      expect(svc.addBot(plain, 'a', 0)).toEqual({ ok: false, error: 'Este jogo ainda não tem bots.' });
+    });
+
+    it('respeita a capacidade e gera nomes únicos; o dono remove bots', () => {
+      const room = botLobby();
+      for (let i = 0; i < 3; i++) expect(botSvc.addBot(room, 'a', 0).ok).toBe(true);
+      expect(botSvc.addBot(room, 'a', 0)).toEqual({ ok: false, error: 'A sala está cheia.' });
+      expect(botSvc.kick(room, 'a', 'bot-2', 0).ok).toBe(true);
+      botSvc.addBot(room, 'a', 0);
+      expect(room.players.map((p) => p.id)).toEqual(['a', 'bot-1', 'bot-3', 'bot-2']);
+    });
+
+    it('trocar para um jogo sem bots remove os bots', () => {
+      const room = botLobby();
+      botSvc.addBot(room, 'a', 0);
+      botSvc.setGame(room, 'a', 'other');
+      expect(room.players.map((p) => p.id)).toEqual(['a']);
+    });
+
+    it('bots contam como prontos e continuam prontos depois da partida', () => {
+      const room = botLobby();
+      botSvc.addBot(room, 'a', 0);
+      expect(botSvc.startBlocker(room)).toBeNull();
+      botSvc.start(room, 'a', 1, 0);
+      botSvc.backToLobby(room, 'a');
+      expect(room.players.find((p) => p.bot)!.ready).toBe(true);
+    });
+
+    it('bot joga na sua vez recebendo só a visão de jogador e as ações legais', () => {
+      const room = botLobby();
+      botSvc.addBot(room, 'a', 0);
+      botSvc.start(room, 'a', 1, 0);
+      expect(botSvc.pendingBot(room)).toBeNull(); // vez da Ana
+      botSvc.action(room, 'a', { type: 'add', n: 1 }, 0);
+      expect(botSvc.pendingBot(room)).toBe('bot-1');
+      seen.length = 0;
+      expect(botSvc.playBot(room, 7, 0).ok).toBe(true);
+      expect(room.game!.seq).toBe(2);
+      expect(seen[0]).toMatchObject({ playerId: 'bot-1', legal: counterGame.getLegalActions(null as never, 'bot-1') });
+      expect(botSvc.pendingBot(room)).toBeNull();
+    });
+
+    it('ação inválida da estratégia cai na primeira ação legal', () => {
+      const s = new RoomService({ counter: counterGame }, { counter: brokenBot });
+      const room = botLobby(s);
+      s.addBot(room, 'a', 0);
+      s.start(room, 'a', 1, 0);
+      s.action(room, 'a', { type: 'add', n: 1 }, 0);
+      expect(s.playBot(room, 1, 0).ok).toBe(true);
+      expect((room.game!.state as { scores: Record<string, number> }).scores['bot-1']).toBe(1);
+    });
+
+    it('bots esperam sem humanos conectados e não seguram a sala nem a posse', () => {
+      const room = botLobby();
+      svc.join(room, 'b', 'Beto', 0);
+      botSvc.addBot(room, 'a', 0);
+      botSvc.setReady(room, 'b', true);
+      botSvc.start(room, 'a', 1, 0);
+      botSvc.action(room, 'a', { type: 'add', n: 1 }, 0);
+      botSvc.action(room, 'b', { type: 'add', n: 1 }, 0);
+      expect(botSvc.pendingBot(room)).toBe('bot-1');
+      botSvc.disconnect(room, 'a', 10);
+      botSvc.disconnect(room, 'b', 10);
+      expect(botSvc.pendingBot(room)).toBeNull();
+      expect(botSvc.tick(room, 10 + OWNER_GRACE_MS).changed).toBe(false);
+      expect(room.ownerId).toBe('a');
+      expect(botSvc.tick(room, 10 + ROOM_IDLE_TTL_MS).expired).toBe(true);
+      botSvc.leave(room, 'a', 20);
+      botSvc.leave(room, 'b', 20);
+      expect(room.ownerId).toBeNull();
+    });
+
+    it('bot não marca pronto pelo protocolo', () => {
+      const room = botLobby();
+      botSvc.addBot(room, 'a', 0);
+      expect(botSvc.setReady(room, 'bot-1', false).ok).toBe(false);
+    });
   });
 
   it('o jogo de teste passa na bateria de conformidade', () => {

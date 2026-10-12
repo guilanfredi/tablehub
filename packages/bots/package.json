@@ -1,0 +1,16 @@
+{
+  "name": "@tablehub/bots",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@tablehub/game-sdk": "*",
+    "@tablehub/games": "*"
+  },
+  "devDependencies": {
+    "@tablehub/room-core": "*"
+  }
+}
