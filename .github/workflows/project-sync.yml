@@ -32,7 +32,7 @@ jobs:
           script: |
             // etiqueta → opção do Status (a primeira que bater vence)
             const MAP = [
-              ['aguardando-dono', 'Aguardando você'],
+              ['aguardando-dono', 'Aguardando Dono'],
               ['pronto-para-aprovação', 'Pronto para aprovar'],
               ['fase:review', 'Revisão'],
               ['fase:qa', 'QA'],
