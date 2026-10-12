@@ -14,8 +14,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit && tsc -p apps/worker/tsconfig.json --noEmit && tsc -p e2e/tsconfig.json --noEmit",
     "deploy": "npm run build && npm run deploy -w @tablehub/worker",
     "new-game": "node scripts/new-game.mjs",
-    "e2e": "playwright test",
-    "agentes": "node automation/monitor/agentes.mjs"
+    "e2e": "playwright test"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",

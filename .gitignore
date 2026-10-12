@@ -10,6 +10,7 @@ coverage/
 manuals/
 test-results/
 playwright-report/
+# legado: logs/estado do despachante antigo, que ficava aqui (hoje em tablehub-agent-automation)
 automation/logs/
 automation/state/
 deploy.log

@@ -9,7 +9,7 @@ Plataforma PWA para jogar boardgames em salas (Dominó, Truco Paulista, Catan…
   Se não estiver configurado, pare e peça ao usuário — não use a conta pessoal dele.
 - PR aprovado + CI verde → merge → deploy automático (`.github/workflows/deploy.yml`).
 - **Time de agentes** (`docs/TEAM.md`): cada função roda numa sessão própria — `/analista`, `/dev`, `/qa`, `/revisor`. O PR é o quadro de passagem (etiquetas `fase:*` + comentários com a função entre colchetes).
-- Automação local (despachante + Agendador do Windows): `docs/AUTOMATION.md`. Tarefas são issues; etiquetas `agente:trabalhando` e `aguardando-dono`.
+- Automação local (despachante + monitor) fica no repositório [tablehub-agent-automation](https://github.com/guilanfredi/tablehub-agent-automation); aqui só a configuração em `.agents/` (ver `docs/AUTOMATION.md`). Tarefas são issues; etiquetas `agente:trabalhando` e `aguardando-dono`.
 - Manuais de jogos ficam em `manuals/` (fora do git; material protegido).
 - Detalhes técnicos de jogos: `docs/GAME_AUTHORING.md`. A skill `add-game` é o modo solo (uma sessão faz tudo).
 
