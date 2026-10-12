@@ -62,7 +62,11 @@ New-Item -ItemType Directory -Force -Path $StateDir, $LogDir, (Join-Path $Root '
 function Log([string]$msg) {
   $line = '{0:yyyy-MM-dd HH:mm:ss} {1}' -f (Get-Date), $msg
   Write-Host $line
-  Add-Content -Path (Join-Path $LogDir 'dispatcher.log') -Value $line -Encoding utf8
+  # log nunca derruba o despachante (o arquivo pode estar aberto por outro programa)
+  for ($i = 0; $i -lt 5; $i++) {
+    try { Add-Content -Path (Join-Path $LogDir 'dispatcher.log') -Value $line -Encoding utf8 -ErrorAction Stop; break }
+    catch { Start-Sleep -Milliseconds 200 }
+  }
 }
 
 # ---------------- ferramentas ----------------
@@ -70,6 +74,8 @@ $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [En
 $Gh = (Get-Command gh -ErrorAction SilentlyContinue).Source
 if (-not $Gh -and (Test-Path 'C:\Program Files\GitHub CLI\gh.exe')) { $Gh = 'C:\Program Files\GitHub CLI\gh.exe' }
 if (-not $Gh) { Log 'ERRO: gh não encontrado.'; exit 1 }
+# o Bash do agente herda este PATH: garante gh e node mesmo se o registro estiver desatualizado
+$env:Path = (Split-Path $Gh -Parent) + ';' + $env:Path
 
 function Find-Claude {
   $cmd = Get-Command claude -ErrorAction SilentlyContinue
@@ -81,16 +87,38 @@ function Find-Claude {
   return $null
 }
 
+function Invoke-Native([string]$exe, [string[]]$exeArgs, [switch]$Capture) {
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    if ($Capture) { $out = & $exe @exeArgs 2>$null } else { & $exe @exeArgs 2>&1 | Out-Null; $out = $null }
+    $code = $LASTEXITCODE
+  } finally { $ErrorActionPreference = $prev }
+  return @{ Code = $code; Out = $out }
+}
+
+function Invoke-Git([string[]]$gitArgs) {
+  $r = Invoke-Native 'git.exe' $gitArgs
+  if ($r.Code -ne 0) { throw "git $($gitArgs -join ' ') falhou ($($r.Code))" }
+}
+
 function GhJson([string[]]$ghArgs) {
-  $out = & $Gh @ghArgs 2>$null
-  if ($LASTEXITCODE -ne 0) { throw "gh $($ghArgs -join ' ') falhou" }
+  $r = Invoke-Native $Gh $ghArgs -Capture
+  $out = $r.Out
+  if ($r.Code -ne 0) { throw "gh $($ghArgs -join ' ') falhou" }
   if (-not $out) { return @() }
   return ($out -join "`n") | ConvertFrom-Json
 }
 
+# Lista paginada: todas as páginas, um objeto JSON por linha (--jq '.[]').
+function GhList([string]$endpoint) {
+  $r = Invoke-Native $Gh @('api', '--paginate', $endpoint, '--jq', '.[]') -Capture
+  if ($r.Code -ne 0) { throw "gh api $endpoint falhou" }
+  return @($r.Out | Where-Object { $_ } | ForEach-Object { $_ | ConvertFrom-Json })
+}
+
 function Gh([string[]]$ghArgs) {
-  & $Gh @ghArgs 2>&1 | Out-Null
-  return $LASTEXITCODE -eq 0
+  return (Invoke-Native $Gh $ghArgs).Code -eq 0
 }
 
 function Add-Label([int]$n, [string]$label) { Gh @('api', '-X', 'POST', "repos/$Repo/issues/$n/labels", '-f', "labels[]=$label") | Out-Null }
@@ -113,7 +141,7 @@ if (Test-Path $LockFile) {
   $age = (Get-Date) - [datetime]$lock.started
   if ($alive -and $age.TotalMinutes -lt ($lock.timeoutMin + 5)) { exit 0 }
   Log "Trava antiga de $($lock.role) #$($lock.number) removida."
-  if ($alive) { & taskkill /T /F /PID $lock.pid 2>&1 | Out-Null }
+  if ($alive) { Invoke-Native 'taskkill' @('/T', '/F', '/PID', "$($lock.pid)") | Out-Null }
   if (-not $DryRun) { Remove-Label $lock.number $LabelWorking }
   Remove-Item $LockFile -Force
 }
@@ -121,16 +149,16 @@ if (Test-Path $LockFile) {
 # ---------------- escolhe o trabalho ----------------
 function Get-OwnerReplyAfter([int]$number, [datetime]$since, [bool]$isPr) {
   $times = @()
-  $times += GhJson @('api', "repos/$Repo/issues/$number/comments?per_page=100") | Where-Object { $_.user.login -eq $Owner } | ForEach-Object { [datetime]$_.created_at }
+  $times += GhList "repos/$Repo/issues/$number/comments?per_page=100" | Where-Object { $_.user.login -eq $Owner } | ForEach-Object { [datetime]$_.created_at }
   if ($isPr) {
-    $times += GhJson @('api', "repos/$Repo/pulls/$number/comments?per_page=100") | Where-Object { $_.user.login -eq $Owner } | ForEach-Object { [datetime]$_.created_at }
-    $times += GhJson @('api', "repos/$Repo/pulls/$number/reviews?per_page=100") | Where-Object { $_.user.login -eq $Owner -and $_.submitted_at } | ForEach-Object { [datetime]$_.submitted_at }
+    $times += GhList "repos/$Repo/pulls/$number/comments?per_page=100" | Where-Object { $_.user.login -eq $Owner } | ForEach-Object { [datetime]$_.created_at }
+    $times += GhList "repos/$Repo/pulls/$number/reviews?per_page=100" | Where-Object { $_.user.login -eq $Owner -and $_.submitted_at } | ForEach-Object { [datetime]$_.submitted_at }
   }
   return @($times | Where-Object { $_ -gt $since }).Count -gt 0
 }
 
 function Get-LabelAddedAt([int]$number, [string]$label) {
-  $events = GhJson @('api', "repos/$Repo/issues/$number/events?per_page=100") | Where-Object { $_.event -eq 'labeled' -and $_.label.name -eq $label }
+  $events = GhList "repos/$Repo/issues/$number/events?per_page=100" | Where-Object { $_.event -eq 'labeled' -and $_.label.name -eq $label }
   $last = $events | Select-Object -Last 1
   if ($last) { return [datetime]$last.created_at }
   return [datetime]::MinValue
@@ -175,22 +203,25 @@ if (-not $Claude) { Log 'ERRO: Claude Code CLI não encontrado.'; exit 1 }
 $wt = Join-Path $AgentsDir $job.Role.Name
 if (-not (Test-Path $wt)) {
   New-Item -ItemType Directory -Force -Path $AgentsDir | Out-Null
-  & git -C $Root fetch -q origin
-  & git -C $Root worktree add -q --detach $wt origin/main
+  Invoke-Git @('-C', $Root, 'fetch', '-q', 'origin')
+  Invoke-Git @('-C', $Root, 'worktree', 'add', '-q', '--detach', $wt, 'origin/main')
 }
-& git -C $wt fetch -q origin
-& git -C $wt reset -q --hard
-& git -C $wt clean -q -fd -e node_modules
-& git -C $wt switch -q --detach origin/main
-& git -C $wt config user.name $Bot
-& git -C $wt config user.email '341239158+gui-dev-bot@users.noreply.github.com'
+Invoke-Git @('-C', $wt, 'fetch', '-q', 'origin')
+Invoke-Git @('-C', $wt, 'reset', '-q', '--hard')
+Invoke-Git @('-C', $wt, 'clean', '-q', '-fd', '-e', 'node_modules')
+Invoke-Git @('-C', $wt, 'switch', '-q', '--detach', 'origin/main')
+Invoke-Git @('-C', $wt, 'config', 'user.name', $Bot)
+Invoke-Git @('-C', $wt, 'config', 'user.email', '341239158+gui-dev-bot@users.noreply.github.com')
 
 $lockHash = (Get-FileHash (Join-Path $wt 'package-lock.json')).Hash
 $marker = Join-Path $wt 'node_modules\.lock-hash'
 if (-not (Test-Path $marker) -or (Get-Content $marker -Raw).Trim() -ne $lockHash) {
   Log 'npm ci no worktree...'
   Push-Location $wt
-  & npm ci --no-audit --no-fund 2>&1 | Out-Null
+  $npm = (Get-Command npm.cmd -ErrorAction SilentlyContinue).Source
+  if (-not $npm) { $npm = 'npm' }
+  $r = Invoke-Native $npm @('ci', '--no-audit', '--no-fund')
+  if ($r.Code -ne 0) { Pop-Location; Log "ERRO: npm ci falhou no worktree $wt ($($r.Code))."; exit 1 }
   Pop-Location
   Set-Content -Path $marker -Value $lockHash
 }
@@ -213,12 +244,12 @@ $proc = Start-Process -FilePath $Claude -ArgumentList $argList -WorkingDirectory
 $finished = $proc.WaitForExit($job.Role.TimeoutMin * 60 * 1000)
 try {
   if (-not $finished) {
-    & taskkill /T /F /PID $proc.Id 2>&1 | Out-Null
+    Invoke-Native 'taskkill' @('/T', '/F', '/PID', "$($proc.Id)") | Out-Null
     Log "TIMEOUT: /$($job.Role.Name) $($job.Number) passou de $($job.Role.TimeoutMin) min e foi encerrado."
     Add-Comment $job.Number "**[Automação]** A função $($job.Role.Name) excedeu $($job.Role.TimeoutMin) min e foi interrompida. @$Owner, veja os logs locais."
     Add-Label $job.Number $LabelWaiting
   } else {
-    $raw = Get-Content $logFile -Raw -ErrorAction SilentlyContinue
+    $raw = Get-Content $logFile -Raw -Encoding UTF8 -ErrorAction SilentlyContinue
     $result = $null
     try { $result = $raw | ConvertFrom-Json } catch { }
     if ($result -and $result.is_error) {
