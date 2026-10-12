@@ -2,6 +2,7 @@ import type { GameDefinition } from '@tablehub/game-sdk';
 import { catan } from './catan/engine';
 import { domino } from './domino/engine';
 import { trucoPaulista } from './truco-paulista/engine';
+import { kingOfTokyo } from './king-of-tokyo/engine';
 // @new-game:import
 
 /**
@@ -12,6 +13,7 @@ export const GAMES: Record<string, GameDefinition> = {
   [domino.id]: domino,
   [trucoPaulista.id]: trucoPaulista,
   [catan.id]: catan,
+  [kingOfTokyo.id]: kingOfTokyo,
   // @new-game:entry
 };
 

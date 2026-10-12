@@ -18,5 +18,6 @@ export const BOARDS: Record<string, LazyExoticComponent<ComponentType<BoardProps
   domino: lazy(() => import('./domino/DominoBoard')),
   'truco-paulista': lazy(() => import('./truco-paulista/TrucoBoard')),
   catan: lazy(() => import('./catan/CatanBoard')),
+  'king-of-tokyo': lazy(() => import('./king-of-tokyo/KingOfTokyoBoard')),
   // @new-game:board
 };
