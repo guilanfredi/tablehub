@@ -11,23 +11,23 @@ King of Tokyo) é **low poly**: formas facetadas em SVG feito à mão/código, c
 fotográficos e sem assets de jogos comerciais.
 
 ## Partes
-A issue reúne oito pedidos. Para manter cada entrega testável, a especificação é dividida em partes
-(ver Dúvida 1 sobre como entregá-las):
+A issue reúne oito pedidos. Para manter cada entrega testável, a especificação é dividida em partes e
+**cada parte vira um PR próprio** (Dúvida 1, decidida). Este arquivo continua sendo a especificação de todas elas.
 
-| Parte | Itens da issue | Conteúdo |
-|---|---|---|
-| A — Perfil e bots | 1, 2, 5 | avatares, perfil salvo, bots com nome/avatar/tempo de pensar, aviso de vez |
-| B — Mesa comum, histórico e animações | 4, 6, 8 (base) | componente de mesa, painel de histórico, animações |
-| C — Dominó | 3, 7 | monte visual e compra pelo jogador |
-| D — Mesa do King of Tokyo | 8 | tabuleiro de Tóquio, monstros ao redor, mercado em miniatura |
+| Parte | Itens da issue | Conteúdo | Entrega |
+|---|---|---|---|
+| A — Perfil e bots | 1, 2, 5 | avatares, perfil salvo, bots com nome/avatar/tempo de pensar, aviso de vez | **este PR (#25)** |
+| C — Dominó | 3, 7 | monte visual e compra pelo jogador | issue própria, 1ª na fila |
+| B — Mesa comum, histórico e animações | 4, 6, 8 (base) | componente de mesa, painel de histórico, animações | issue própria, depois de A e C |
+| D — Mesa do King of Tokyo | 8 | tabuleiro de Tóquio, monstros ao redor, mercado em miniatura | issue própria, depende de B |
 
 ---
 
 ## Parte A — Perfil e bots
 
 ### A1. Avatares
-- Conjunto fixo de **20 avatares** low poly. Proposta (Dúvida 2): cabeças de animais da fauna brasileira e
-  clássicos — onça, capivara, tucano, arara, boto, jacaré, mico, tamanduá, preguiça, lobo-guará, coruja, raposa,
+- Conjunto fixo de **20 avatares** low poly de **animais** (Dúvida 2, decidida): cabeças de animais da fauna
+  brasileira e clássicos — onça, capivara, tucano, arara, boto, jacaré, mico, tamanduá, preguiça, lobo-guará, coruja, raposa,
   gato, cachorro, coelho, panda, pinguim, sapo, polvo, tartaruga.
 - Cada avatar tem um id estável (`onca`, `capivara`…) e um rótulo em português (usado no `aria-label`).
 - Renderização: componente `<Avatar id size ring? bot? />` em `apps/web/src/components/avatars/`, SVG em
@@ -46,13 +46,19 @@ A issue reúne oito pedidos. Para manter cada entrega testável, a especificaç�
 - Avatares repetidos na mesma sala são permitidos (o nome diferencia).
 
 ### A3. Bots com nome e avatar
-- Ao adicionar um bot, ele recebe um **nome** de uma lista fixa de 16 nomes (proposta: Tião, Neide, Juca, Cida,
-  Zeca, Dalva, Bento, Lurdinha, Quim, Tonha, Nico, Fátima, Dito, Rosinha, Lalá, Severino) e um **avatar** do
+- Ao adicionar um bot, ele recebe um **nome** da lista fixa escolhida pelo dono (Dúvida 5, decidida), com
+  11 nomes: Paula, Jacinto, Benjamin, Cuca, Kelly, Oscar, Simas, Giuseppe, Sujiro, Tati, Kevin (a resposta
+  listava "Oscar" duas vezes; fica uma). Basta para o maior jogo (6 lugares). Também recebe um **avatar** do
   mesmo conjunto dos humanos, ambos sorteados entre os que **ainda não estão em uso** na sala (nome comparado sem
   acento/maiúsculas, inclusive contra humanos).
 - Indicação de bot, em todo lugar onde o jogador aparece (lobby, mesa, histórico): um pequeno selo de robô
   (🤖 em SVG low poly) no canto do avatar + `title`/`aria-label` "Bot". O selo "Bot" do lobby continua.
+- Se todos os nomes da lista já estiverem em uso (só acontece com humanos usando esses nomes), o bot recebe
+  "Bot <n>" como hoje.
 - Ids continuam `bot-<n>` (nenhuma regra de sala depende do nome).
+- **Onde aparece antes da Parte B:** enquanto a mesa comum não existe, avatar, selo de bot e "pensando…" (A4)
+  entram onde cada tabuleiro já mostra os jogadores (assentos do Truco, lista de jogadores do Dominó, do Catan
+  e do King of Tokyo), sem redesenhar o layout. A Parte B depois move isso para `GameTableLayout`.
 
 ### A4. Tempo de pensar dos bots
 - Antes de cada jogada, o bot espera um tempo **aleatório**:
@@ -108,7 +114,7 @@ Componente de layout em `apps/web/src/components/table/` usado pelos tabuleiros:
   o centro ocupa a largura toda e a sua mão fica embaixo. Nada de rolagem horizontal da página.
 - Aplicar em: **Dominó**, **Truco** (substitui o layout próprio de assentos, mantendo o visual atual das cartas)
   e **King of Tokyo** (Parte D). **Catan** fica como está, só ganhando avatares no painel de jogadores
-  (Dúvida 4).
+  (Dúvida 4, decidida).
 
 ### B2. Histórico (log) em todos os jogos
 - Botão "Histórico" no cabeçalho da mesa, com **contador de não lidas**. Abre um painel lateral (desktop, ≥ 900 px,
@@ -152,7 +158,7 @@ A animação nunca atrasa a interação: o estado novo já está clicável duran
 ### C1. Comprar é uma ação do jogador
 Hoje o motor **não** compra sozinho: quando não há jogada, a interface mostra só o botão "Comprar do monte" e a
 peça aparece na mão sem nenhum retorno visual, o que provavelmente foi percebido como compra automática
-(Dúvida 3 confirma o que os jogadores queriam). Proposta:
+(Dúvida 3, decidida: o que os jogadores querem é **comprar tocando no monte**). Comportamento:
 - Sem jogada possível e com monte: aparece o aviso "Sem peça para jogar — compre do monte", o **monte pisca** e o
   jogador compra **tocando no monte** (o botão continua, para acessibilidade). Uma peça por toque.
 - A peça comprada entra na mão com animação e fica destacada até a próxima jogada; se ela (ou outra) encaixar, as
@@ -193,22 +199,19 @@ peça aparece na mão sem nenhum retorno visual, o que provavelmente foi percebi
 - Chat entre jogadores.
 - Notificação com a aba/app fechados (push do servidor).
 
-## Dúvidas
-1. **Entrega.** São quatro partes grandes. Alternativas: (a) tudo neste PR; (b) este PR entrega A + C (perfil,
-   bots, aviso, dominó) e, na retomada, o Analista abre issues separadas para B e D apontando para este arquivo;
-   (c) quatro PRs, um por parte. **Recomendo (c)**: este PR leva a especificação + Parte A; ao retomar, abro as
-   issues de B, C e D (já com `fase:dev`, nesta ordem de prioridade: C, B, D — D depende de B).
-2. **Tema dos avatares.** (a) animais (lista em A1); (b) pessoas variadas; (c) misto. **Recomendo (a)**: neutro,
-   combina com low poly e não exige representar etnia/gênero.
-3. **Compra no dominó (item 3).** O motor atual já exige que o jogador clique para comprar. O que os jogadores
-   queriam? (a) o que está em C1: comprar tocando no monte, com aviso e animação; (b) poder comprar **mesmo tendo
-   peça para jogar** (variante de regra — viraria opção da sala); (c) outra coisa (descrever). **Recomendo (a)**.
-4. **Catan na mesa comum.** O mapa ocupa o centro e não há lugar natural para assentos. **Recomendo** só avatares
-   no painel de jogadores do Catan (como em B1); alternativa: assentos ao redor do mapa também.
-5. **Nomes dos bots.** Lista em A3, com nomes brasileiros "de interior". **Recomendo** manter; alternativa: nomes
-   temáticos de robô ("Robertinho", "Chip"...).
+## Dúvidas (todas resolvidas pelo dono em 12/10/2026)
+1. **Entrega** (tudo neste PR / A + C / um PR por parte) → **um PR por parte.** Este PR (#25) entrega a Parte A;
+   C, B e D viram issues próprias, nessa ordem (D depende de B).
+2. **Tema dos avatares** (animais / pessoas / misto) → **animais** (lista em A1).
+3. **Compra no dominó** (comprar tocando no monte / poder comprar mesmo tendo peça / outra) → **comprar tocando
+   no monte**, com aviso e animação (C1). Nenhuma regra do motor muda.
+4. **Catan na mesa comum** (só avatares / assentos ao redor do mapa) → **só avatares** no painel de jogadores.
+5. **Nomes dos bots** (nomes brasileiros de interior / nomes de robô) → **lista do dono** (A3).
 
 ## Critérios de aceite
+O PR #25 é conferido pelos critérios 1–8 (Parte A) e pelo 19 no que toca a Parte A (avatares e selo de bot).
+Os demais valem para o PR de cada parte.
+
 **Parte A**
 1. Na página inicial é possível escolher 1 de 20 avatares e um apelido; recarregar a página (e abrir em outra aba
    do mesmo perfil) mantém os dois. `?perfil=2` tem perfil próprio.
@@ -219,7 +222,7 @@ peça aparece na mão sem nenhum retorno visual, o que provavelmente foi percebi
    outra pessoa não faz nada. Durante a partida, `rename` com avatar é recusado com mensagem em português.
 5. Cliente que manda `hello` sem `avatar` entra normalmente e aparece com um avatar padrão estável (o mesmo a
    cada reconexão).
-6. Bots adicionados recebem nomes da lista e avatares distintos entre si e dos nomes humanos da sala, com o selo
+6. Bots adicionados recebem nomes da lista de A3 e avatares distintos entre si e dos nomes humanos da sala, com o selo
    de robô visível no lobby e na mesa.
 7. Cada jogada de bot acontece entre 1,2 s e 2,5 s após a vez chegar a ele (ações seguidas: 0,6–1 s); durante a
    espera o assento mostra "pensando…". Teste de `room-core` cobre as faixas com `Rng` semeado.
