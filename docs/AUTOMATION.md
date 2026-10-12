@@ -42,6 +42,24 @@ Claude Code em modo automático (`claude -p "/<função> <n>"`), usando a **sua 
 - `dispatcher.ps1 -DryRun` mostra o que seria feito; `-Only <função>` restringe a uma função.
 - Trava presa: apague `automation/state/running.json` (o despachante também limpa travas vencidas sozinho).
 
+## Monitor de instâncias
+Mostra **todas** as sessões do Claude Code na máquina — app desktop, terminal e as do despachante — com estado
+(`executando`, `pensando`, `aguardando` você, `ocioso`, `encerrada`, `morta`), ferramenta atual, último pedido e pasta.
+Funciona por hooks nas configurações do usuário (`~/.claude/settings.json`), que valem para qualquer instância.
+
+- **Instalar** (uma vez, e de novo quando `automation/monitor/hook.mjs` mudar):
+  ```powershell
+  node automation/monitor/install.mjs
+  ```
+  Copia o hook para `~/.claude/monitor/hook.mjs` (independe da branch aberta) e faz backup em `settings.json.bak`.
+  Sessões já abertas costumam aparecer no próximo evento (o Claude Code recarrega os hooks); se não, reinicie-as. Remover: `node automation/monitor/install.mjs --remover`.
+- **Ver:** `npm run agentes` (uma vez), `npm run agentes -- --watch` (atualiza a cada 3 s), `--todas` (inclui encerradas
+  nas últimas 24 h), `--json` (para scripts).
+- Sessões do despachante aparecem como `/<função> <n>` (variável `TABLEHUB_AGENT`).
+- `⚠ sem atividade` = sessão trabalhando sem nenhum evento há mais de 10 min (possível travamento).
+- Processos do Claude Code sem dados do hook também são listados (ex.: sessão parada desde antes da instalação).
+- Dados em `~/.claude/monitor/sessions/` (um JSON por sessão; sessões terminadas somem após 24 h).
+
 ## Segurança
 - Permissões por função em `automation/roles/`: todas negam merge, force-push, push na `main`, segredos, `gh auth` (exceto `status`), deploy e acesso à web.
   O Revisor não tem `Edit`/`Write` nem `git commit`/`git push` — é técnico, não só instrução.
