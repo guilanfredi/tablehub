@@ -235,6 +235,8 @@ $settings = Join-Path $PSScriptRoot "roles\$($job.Role.Name).json"
 $promptFile = Join-Path $StateDir 'auto-prompt.txt'
 Set-Content -Path $promptFile -Value $AutoPrompt -Encoding utf8
 
+# identifica a sessão no monitor de instâncias (automation/monitor; o hook lê esta variável)
+$env:TABLEHUB_AGENT = "$($job.Role.Name) $($job.Number)"
 $argList = @('-p', "`"/$($job.Role.Name) $($job.Number)`"", '--settings', "`"$settings`"", '--append-system-prompt-file', "`"$promptFile`"", '--add-dir', "`"$(Join-Path $Root 'manuals')`"", '--output-format', 'json')
 $proc = Start-Process -FilePath $Claude -ArgumentList $argList -WorkingDirectory $wt -NoNewWindow -PassThru `
   -RedirectStandardOutput $logFile -RedirectStandardError $errFile
