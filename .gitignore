@@ -12,3 +12,4 @@ test-results/
 playwright-report/
 automation/logs/
 automation/state/
+deploy.log

@@ -50,12 +50,7 @@ jobs:
       - run: npm run build
       - name: Publica o Worker de preview deste PR
         id: deploy
-        working-directory: apps/worker
-        run: |
-          npx wrangler deploy --name "$WORKER_NAME" 2>&1 | tee deploy.log
-          url=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' deploy.log | head -1)
-          if [ -z "$url" ]; then echo "URL do preview não encontrada" >&2; exit 1; fi
-          echo "url=$url" >> "$GITHUB_OUTPUT"
+        run: scripts/deploy.sh "$WORKER_NAME"
       - name: Smoke test no preview
         run: node scripts/smoke.mjs "${{ steps.deploy.outputs.url }}"
       - name: Comenta a URL no PR
