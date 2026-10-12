@@ -418,7 +418,7 @@ function getStatus(s: TrucoState): GameStatus {
 
 export const trucoPaulista: GameDefinition<TrucoState, TrucoAction, TrucoOptions> = {
   id: 'truco-paulista',
-  name: 'Truco Paulista',
+  name: 'Truco',
   description: 'Truco com baralho sujo, vira e manilhas variáveis. Individual (2) ou em duplas (4).',
   minPlayers: 2,
   maxPlayers: 4,
@@ -453,7 +453,7 @@ export const trucoPaulista: GameDefinition<TrucoState, TrucoAction, TrucoOptions
   },
   seatLabel: (seat, _o, n) => (n === 4 ? (seat % 2 === 0 ? 'Dupla A' : 'Dupla B') : null),
   validateConfig(_o, n) {
-    if (n !== 2 && n !== 4) return 'Truco Paulista é jogado com 2 ou 4 jogadores.';
+    if (n !== 2 && n !== 4) return 'Truco é jogado com 2 ou 4 jogadores.';
     return null;
   },
   setup: ({ players, options, seed }) =>
