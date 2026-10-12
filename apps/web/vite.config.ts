@@ -2,6 +2,10 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// portas configuráveis para rodar várias instâncias em paralelo (agentes do despachante; ver docs/AUTOMATION.md)
+const webPort = Number(process.env.TABLEHUB_WEB_PORT ?? 5173);
+const workerPort = Number(process.env.TABLEHUB_WORKER_PORT ?? 8787);
+
 export default defineConfig({
   plugins: [
     react(),
@@ -32,10 +36,12 @@ export default defineConfig({
     }),
   ],
   server: {
-    port: 5173,
+    port: webPort,
+    // porta ocupada é erro: nunca cair em outra porta e servir/testar o app de outra instância
+    strictPort: true,
     proxy: {
-      '/api': 'http://127.0.0.1:8787',
-      '/ws': { target: 'ws://127.0.0.1:8787', ws: true },
+      '/api': `http://127.0.0.1:${workerPort}`,
+      '/ws': { target: `ws://127.0.0.1:${workerPort}`, ws: true },
     },
   },
   build: { outDir: 'dist', emptyOutDir: true },

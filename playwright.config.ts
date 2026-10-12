@@ -4,7 +4,8 @@ import { defineConfig, devices } from '@playwright/test';
  * Testes ponta a ponta no navegador. Por padrão sobem o app local (`npm run dev`);
  * com BASE_URL apontam para outro ambiente (ex.: preview de PR).
  */
-const baseURL = process.env.BASE_URL ?? 'http://localhost:5173';
+const webPort = process.env.TABLEHUB_WEB_PORT ?? '5173';
+const baseURL = process.env.BASE_URL ?? `http://localhost:${webPort}`;
 
 export default defineConfig({
   testDir: './e2e',
@@ -20,5 +21,11 @@ export default defineConfig({
   ],
   webServer: process.env.BASE_URL
     ? undefined
-    : { command: 'npm run dev', url: 'http://localhost:5173', reuseExistingServer: true, timeout: 120_000 },
+    : {
+        command: 'npm run dev',
+        url: `http://localhost:${webPort}`,
+        // com porta própria (agentes em paralelo), nunca reaproveitar: um servidor ali seria de outra instância
+        reuseExistingServer: !process.env.TABLEHUB_WEB_PORT,
+        timeout: 120_000,
+      },
 });
