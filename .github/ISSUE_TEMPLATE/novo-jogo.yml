@@ -1,0 +1,24 @@
+name: Novo jogo
+description: Pedir um jogo novo. O Analista começa automaticamente.
+title: "Novo jogo: "
+labels: ["fase:spec"]
+body:
+  - type: input
+    id: jogo
+    attributes:
+      label: Jogo
+      description: Nome do jogo e id sugerido (kebab-case), ex.: "Ticket to Ride (ticket-to-ride)"
+    validations:
+      required: true
+  - type: input
+    id: manual
+    attributes:
+      label: Manual
+      description: Nome do arquivo em manuals/ na máquina dos agentes (nunca anexe o manual aqui — o repositório é público).
+    validations:
+      required: true
+  - type: textarea
+    id: escopo
+    attributes:
+      label: Escopo e preferências
+      description: Variantes que devem virar opções, expansões, número de jogadores, o que ficar de fora.

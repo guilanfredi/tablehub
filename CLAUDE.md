@@ -9,6 +9,7 @@ Plataforma PWA para jogar boardgames em salas (Dominó, Truco Paulista, Catan…
   Se não estiver configurado, pare e peça ao usuário — não use a conta pessoal dele.
 - PR aprovado + CI verde → merge → deploy automático (`.github/workflows/deploy.yml`).
 - **Time de agentes** (`docs/TEAM.md`): cada função roda numa sessão própria — `/analista`, `/dev`, `/qa`, `/revisor`. O PR é o quadro de passagem (etiquetas `fase:*` + comentários com a função entre colchetes).
+- Automação local (despachante + Agendador do Windows): `docs/AUTOMATION.md`. Tarefas são issues; etiquetas `agente:trabalhando` e `aguardando-dono`.
 - Manuais de jogos ficam em `manuals/` (fora do git; material protegido).
 - Detalhes técnicos de jogos: `docs/GAME_AUTHORING.md`. A skill `add-game` é o modo solo (uma sessão faz tudo).
 
@@ -20,6 +21,7 @@ npm run typecheck
 npm run build       # build do PWA em apps/web/dist
 node scripts/smoke.mjs http://localhost:8787   # teste ponta a ponta contra um servidor rodando
 npm run new-game -- <id> "<Nome>"
+npm run e2e         # Playwright (desktop + mobile); BASE_URL=<url> para outro ambiente
 ```
 Para testar vários jogadores no mesmo navegador, use `?perfil=2`, `?perfil=3`… na URL.
 

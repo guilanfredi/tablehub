@@ -1,0 +1,12 @@
+name: Melhoria
+description: Mudança ou recurso novo (que não seja um jogo novo). O Desenvolvedor começa automaticamente.
+title: ""
+labels: ["fase:dev"]
+body:
+  - type: textarea
+    id: oque
+    attributes:
+      label: O que você quer
+      description: O comportamento desejado e por quê. Critérios de aceite, se tiver.
+    validations:
+      required: true
