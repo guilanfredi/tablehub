@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CARD_BY_ID, FACES, type Face, type KingOfTokyoAction, type KingOfTokyoView } from '@tablehub/games/king-of-tokyo/engine';
 import { SeatAvatar } from '../../components/avatars/SeatAvatar';
+import { useFreshKeys } from '../../components/table/anim';
 import type { BoardProps } from '../registry';
 import { FACE_NAMES, FaceIcon, MonsterPortrait } from './art';
 import './king-of-tokyo.css';
@@ -24,6 +25,29 @@ function PowerCard({ id, onZoom, small, extra }: { id: string; onZoom: (id: stri
   );
 }
 
+/** "−2"/"+1" com coração flutuando sobre o monstro quando a vida muda. */
+function HpFloat({ hp }: { hp: number }) {
+  const prev = useRef(hp);
+  const [floats, setFloats] = useState<{ id: number; delta: number }[]>([]);
+  useEffect(() => {
+    const delta = hp - prev.current;
+    prev.current = hp;
+    if (!delta) return;
+    const id = Date.now() + Math.random();
+    setFloats((f) => [...f, { id, delta }]);
+    setTimeout(() => setFloats((f) => f.filter((x) => x.id !== id)), 900);
+  }, [hp]);
+  return (
+    <>
+      {floats.map((f) => (
+        <span key={f.id} className={`kot-float ${f.delta < 0 ? 'dmg' : 'heal'}`} aria-hidden="true">
+          {f.delta < 0 ? `−${-f.delta}` : `+${f.delta}`} <FaceIcon face="heart" size={16} />
+        </span>
+      ))}
+    </>
+  );
+}
+
 export default function KingOfTokyoBoard({ game, room, you, act }: BoardProps) {
   const v = game.view as KingOfTokyoView;
   const legal = game.legal as KingOfTokyoAction[];
@@ -44,6 +68,9 @@ export default function KingOfTokyoBoard({ game, room, you, act }: BoardProps) {
   // dados guardados recomeçam a cada rolagem nova
   useEffect(() => setKeep(v.dice.map((d, i) => (d.kept ? i : -1)).filter((i) => i >= 0)), [v.rollsUsed, v.turn]);
 
+  // dados que acabaram de rolar chacoalham
+  const justRolled = useFreshKeys(v.rollsUsed > 0 ? [`${v.turn}:${v.rollsUsed}`] : []).size > 0;
+
   const canRoll = has('roll');
   const rolling = v.phase === 'roll' && myTurn && !v.pending;
   const toggleKeep = (i: number) => setKeep((k) => (k.includes(i) ? k.filter((x) => x !== i) : [...k, i]));
@@ -62,14 +89,19 @@ export default function KingOfTokyoBoard({ game, room, you, act }: BoardProps) {
       <div className="felt kot-tokyo">
         <div className="kot-place">
           <span className="small">Cidade de Tóquio</span>
-          {city ? <MonsterPortrait monster={v.monsters[city.id].monster} size={52} /> : <div className="kot-empty">vazia</div>}
-          <strong className="small">{city ? nameOf(city.id) : ''}</strong>
+          {/* trocar o ocupante remonta o bloco: o monstro entra deslizando */}
+          <div key={city?.id ?? 'vazia'} className="kot-slide">
+            {city ? <MonsterPortrait monster={v.monsters[city.id].monster} size={52} /> : <div className="kot-empty">vazia</div>}
+            <strong className="small">{city ? nameOf(city.id) : ''}</strong>
+          </div>
         </div>
         {v.bay && (
           <div className="kot-place">
             <span className="small">Baía de Tóquio</span>
-            {bay ? <MonsterPortrait monster={v.monsters[bay.id].monster} size={52} /> : <div className="kot-empty">vazia</div>}
-            <strong className="small">{bay ? nameOf(bay.id) : ''}</strong>
+            <div key={bay?.id ?? 'vazia'} className="kot-slide">
+              {bay ? <MonsterPortrait monster={v.monsters[bay.id].monster} size={52} /> : <div className="kot-empty">vazia</div>}
+              <strong className="small">{bay ? nameOf(bay.id) : ''}</strong>
+            </div>
           </div>
         )}
       </div>
@@ -198,7 +230,7 @@ export default function KingOfTokyoBoard({ game, room, you, act }: BoardProps) {
             <button
               key={i}
               type="button"
-              className={`kot-die ${keep.includes(i) ? 'kept' : ''} ${d.green ? 'green' : ''}`}
+              className={`kot-die ${keep.includes(i) ? 'kept' : ''} ${d.green ? 'green' : ''} ${justRolled && !d.kept ? 'shake' : ''}`}
               disabled={!rolling || v.rollsUsed === 0}
               onClick={() => toggleKeep(i)}
               aria-pressed={keep.includes(i)}
@@ -352,6 +384,7 @@ export default function KingOfTokyoBoard({ game, room, you, act }: BoardProps) {
           const m = v.monsters[p.id];
           return (
             <div key={p.id} className={`card kot-monster ${v.turn === p.id ? 'turn' : ''} ${m.alive ? '' : 'dead'}`}>
+              <HpFloat hp={m.hp} />
               <div className="row kot-monster-head">
                 <MonsterPortrait monster={m.monster} dead={!m.alive} />
                 <div className="grow">
@@ -406,14 +439,6 @@ export default function KingOfTokyoBoard({ game, room, you, act }: BoardProps) {
             </div>
           );
         })}
-      </div>
-
-      <div className="card kot-log">
-        {v.log.slice(-8).map((l, i) => (
-          <div key={i} className="small">
-            {l}
-          </div>
-        ))}
       </div>
 
       {zoom && (

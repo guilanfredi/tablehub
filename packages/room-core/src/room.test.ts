@@ -97,6 +97,18 @@ describe('RoomService', () => {
     expect(room.players.every((p) => !p.ready)).toBe(true);
   });
 
+  it('view da partida leva o histórico, igual para jogadores e espectadores', () => {
+    const room = lobby();
+    svc.setReady(room, 'b', true);
+    svc.start(room, 'a', 1, 0);
+    const cur = svc.gameViewFor(room, 'a')!.status.currentPlayers[0];
+    svc.action(room, cur, { type: 'add', n: 1 }, 0);
+    const log = svc.gameViewFor(room, 'a')!.log;
+    expect(log).toEqual({ total: 1, entries: [{ text: `${cur} somou 1`, by: cur }] });
+    expect(svc.gameViewFor(room, 'b')!.log).toEqual(log);
+    expect(svc.gameViewFor(room, 'espectador')!.log).toEqual(log);
+  });
+
   it('dono que sai transfere a posse; saída durante a partida encerra o jogo', () => {
     const room = lobby();
     svc.setReady(room, 'b', true);

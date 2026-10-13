@@ -4,3 +4,4 @@ export * from './options';
 export * from './runner';
 export * from './hexgrid';
 export * from './bot';
+export * from './log';

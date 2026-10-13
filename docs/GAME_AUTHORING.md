@@ -31,6 +31,7 @@ Gera e registra:
 | `getLegalActions(state, playerId)` | **obrigatório**. Ações válidas agora (alimenta a UI e os testes aleatórios). Para ações com infinitas combinações (ex.: troca livre), retorne um subconjunto representativo. |
 | `applyAction(state, playerId, action)` | recebe **uma cópia** do estado (pode mutar). Valide tudo e retorne `{ error }` em português para jogadas inválidas. |
 | `getStatus(state)` | fase, quem pode agir (`currentPlayers`), vencedores e placar. Mais de um jogador pode agir ao mesmo tempo (respostas de truco, descartes no Catan). |
+| `getLog?(state)` | histórico **público** da partida (`GameLog`), mostrado no painel comum. Guarde no estado com `pushLog(s.log, texto, quemAgiu)` (últimas 60) e devolva `toGameLog(s.log)`. Nunca registre a peça comprada ou carta encoberta. |
 
 Regras de ouro:
 - **Aleatoriedade só via `Rng`** com a semente guardada no estado (`state.rng`). Nunca `Math.random()` ou `Date.now()` no motor.
@@ -46,13 +47,15 @@ Regras de ouro:
    - determinismo (replay das ações reproduz o estado);
    - estado estável em JSON;
    - ação inválida e jogador de fora são rejeitados;
-   - `leakCheck` (forneça um!) — nenhuma informação oculta vaza na view.
+   - `leakCheck` (forneça um!) — nenhuma informação oculta vaza na view;
+   - com `getLog`: formato, limite de 60, total que só cresce e, com `logLeakCheck`, nada oculto no histórico.
 
 ## 4. Interface
 
 - Recebe `game.view` (a view do jogador), `game.legal` (ações legais) e `act(action)`.
 - Destaque o que é jogável a partir de `game.legal` — não reimplemente regras na UI.
 - Mobile-first: teste em 375×812. Tabuleiros grandes usam `components/board/PanZoom`.
+- Jogos de mesa com assentos usam `components/table/GameTableLayout` (você embaixo, demais ao redor). O tabuleiro não desenha log próprio: o histórico é o painel comum.
 - Utilitários prontos: `game-sdk/hexgrid` (tabuleiros hexagonais), `PlayingCard` (truco), `DominoTile`.
 - Arte própria (SVG). Nunca use arte, logotipos ou textos protegidos dos jogos comerciais.
 - Segue o design system (`docs/design-system/`): cores da arte do jogo em `games/<id>/art.tsx`, o resto por token de `tokens.css`; `node scripts/check-design-system.mjs` roda no CI.

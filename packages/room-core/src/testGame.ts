@@ -1,4 +1,4 @@
-import type { GameDefinition } from '@tablehub/game-sdk';
+import { emptyLog, pushLog, type GameDefinition, type GameLog } from '@tablehub/game-sdk';
 
 /** Jogo mínimo usado nos testes da plataforma: cada jogador soma pontos até alguém chegar ao alvo. */
 interface CounterState {
@@ -7,6 +7,7 @@ interface CounterState {
   scores: Record<string, number>;
   target: number;
   winner: string | null;
+  log: GameLog;
 }
 
 export const counterGame: GameDefinition<CounterState, { type: 'add'; n: 1 | 2 }> = {
@@ -27,6 +28,7 @@ export const counterGame: GameDefinition<CounterState, { type: 'add'; n: 1 | 2 }
     scores: Object.fromEntries(players.map((p) => [p.id, 0])),
     target: Number(options.target),
     winner: null,
+    log: emptyLog(),
   }),
   getPlayerView: (s) => s,
   getLegalActions: () => [
@@ -36,6 +38,7 @@ export const counterGame: GameDefinition<CounterState, { type: 'add'; n: 1 | 2 }
   applyAction(s, pid, a) {
     if (a.type !== 'add' || (a.n !== 1 && a.n !== 2)) return { error: 'Ação inválida' };
     s.scores[pid] += a.n;
+    s.log = pushLog(s.log, `${pid} somou ${a.n}`, pid);
     if (s.scores[pid] >= s.target) s.winner = pid;
     else s.turn = (s.turn + 1) % s.players.length;
     return s;
@@ -44,4 +47,5 @@ export const counterGame: GameDefinition<CounterState, { type: 'add'; n: 1 | 2 }
     s.winner
       ? { phase: 'finished', currentPlayers: [], winners: [s.winner], scores: s.scores }
       : { phase: 'playing', currentPlayers: [s.players[s.turn]], scores: s.scores },
+  getLog: (s) => s.log,
 };

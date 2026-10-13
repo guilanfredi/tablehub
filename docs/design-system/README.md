@@ -87,7 +87,9 @@ Os estilos estão em `apps/web/src/design-system/components.css` e as variáveis
 - **Ações:** Button
 - **Formulários:** Field, GamePicker, Switch
 - **Feedback:** Badge, Banner, Toast
-- **Mesa:** Card, PlayerList, StatusPill, TableTop, Scoreboard, TableCode, Log
+- **Mesa:** Card, PlayerList, StatusPill, TableTop, GameTable, History, Scoreboard, TableCode, Log
+
+Animações são curtas (150–350 ms), nunca atrasam cliques e somem por completo com `prefers-reduced-motion`.
 
 A classe `felt` continua funcionando e desenha o tampo de madeira; prefira `table-top` em código novo.
 

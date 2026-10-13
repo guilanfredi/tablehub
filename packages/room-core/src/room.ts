@@ -13,6 +13,7 @@ import {
   AVATARS,
   defaultAvatar,
   MAX_ROOM_PLAYERS,
+  type GameLogView,
   type GameStatusView,
   type MatchResult,
   type OptionsChange,
@@ -459,7 +460,7 @@ export class RoomService {
   gameViewFor(
     room: RoomData,
     playerId: string,
-  ): { gameId: string; seq: number; view: unknown; status: GameStatusView; legal: unknown[] } | null {
+  ): { gameId: string; seq: number; view: unknown; status: GameStatusView; legal: unknown[]; log?: GameLogView } | null {
     if (!room.game) return null;
     const def = this.registry[room.game.gameId];
     if (!def) return null;
@@ -472,6 +473,8 @@ export class RoomService {
       view: def.getPlayerView(state, isPlayer ? playerId : null),
       status,
       legal: isPlayer && status.phase === 'playing' && status.currentPlayers.includes(playerId) ? def.getLegalActions(state, playerId) : [],
+      // público por contrato: o mesmo para todos (inclusive espectadores)
+      ...(def.getLog ? { log: def.getLog(state) } : {}),
     };
   }
 }

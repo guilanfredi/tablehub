@@ -1,4 +1,4 @@
-import { Rng, type GameDefinition, type GameStatus } from '@tablehub/game-sdk';
+import { Rng, pushLog, toGameLog, type GameDefinition, type GameLog, type GameStatus } from '@tablehub/game-sdk';
 import { catanGraph, generateBoard, RESOURCE_LABEL, RESOURCES, TERRAIN_RESOURCE, type Board, type Resource } from './board';
 
 export type Resources = Record<Resource, number>;
@@ -92,7 +92,8 @@ export interface CatanState {
   longestRoad: { player: string; length: number } | null;
   largestArmy: { player: string; count: number } | null;
   trade: TradeOffer | null;
-  log: string[];
+  /** Formato antigo (`string[]`) em partidas anteriores ao histórico comum. */
+  log: GameLog | string[];
   winner: string | null;
 }
 
@@ -128,9 +129,8 @@ function nameOf(s: CatanState, pid: string): string {
   return s.players.find((p) => p.id === pid)?.name ?? pid;
 }
 
-function log(s: CatanState, msg: string) {
-  s.log.push(msg);
-  if (s.log.length > 40) s.log.splice(0, s.log.length - 40);
+function log(s: CatanState, msg: string, by?: string) {
+  s.log = pushLog(s.log, msg, by);
 }
 
 // ---------- Geometria e regras de colocação ----------
@@ -229,14 +229,14 @@ function updateLongestRoad(s: CatanState) {
     else if (top.length === 1) s.longestRoad = { player: top[0].id, length: max };
     else s.longestRoad = null;
   }
-  if (s.longestRoad?.player !== prev?.player && s.longestRoad) log(s, `${nameOf(s, s.longestRoad.player)} tem a Maior Estrada (${s.longestRoad.length}).`);
+  if (s.longestRoad?.player !== prev?.player && s.longestRoad) log(s, `${nameOf(s, s.longestRoad.player)} tem a Maior Estrada (${s.longestRoad.length}).`, s.longestRoad.player);
 }
 
 function updateLargestArmy(s: CatanState, pid: string) {
   const k = s.knights[pid];
   if (k >= 3 && (!s.largestArmy || (s.largestArmy.player !== pid && k > s.largestArmy.count))) {
     s.largestArmy = { player: pid, count: k };
-    log(s, `${nameOf(s, pid)} tem o Maior Exército (${k}).`);
+    log(s, `${nameOf(s, pid)} tem o Maior Exército (${k}).`, pid);
   } else if (s.largestArmy?.player === pid) s.largestArmy.count = k;
 }
 
@@ -256,7 +256,7 @@ function checkWin(s: CatanState) {
     s.winner = pid;
     s.phase = 'finished';
     s.trade = null;
-    log(s, `${nameOf(s, pid)} venceu com ${victoryPoints(s, pid, true)} pontos!`);
+    log(s, `${nameOf(s, pid)} venceu com ${victoryPoints(s, pid, true)} pontos!`, pid);
   }
 }
 
@@ -301,7 +301,7 @@ function setup(players: { id: string; name: string }[], options: CatanOptions, s
     longestRoad: null,
     largestArmy: null,
     trade: null,
-    log: [`Ordem de jogo: ${order.map((p) => p.name).join(', ')}.`],
+    log: pushLog(undefined, `Ordem de jogo: ${order.map((p) => p.name).join(', ')}.`),
     winner: null,
   };
   s.rng = rng.state;
@@ -363,7 +363,7 @@ function doSteal(s: CatanState, thief: string, victim: string) {
     const r = rng.pick(pool);
     s.hands[victim][r]--;
     s.hands[thief][r]++;
-    log(s, `${nameOf(s, thief)} roubou uma carta de ${nameOf(s, victim)}.`);
+    log(s, `${nameOf(s, thief)} roubou uma carta de ${nameOf(s, victim)}.`, thief);
   }
   s.rng = rng.state;
 }
@@ -390,7 +390,7 @@ function applyAction(s: CatanState, pid: string, a: CatanAction): Res {
     if (!s.trade || pid === s.trade.from || s.trade.responses[pid] === undefined) return { error: 'Não há oferta para você responder.' };
     if (a.accept && !hasRes(s.hands[pid], s.trade.get)) return { error: 'Você não tem os recursos pedidos.' };
     s.trade.responses[pid] = a.accept ? 'accept' : 'reject';
-    log(s, `${nameOf(s, pid)} ${a.accept ? 'aceitou' : 'recusou'} a troca.`);
+    log(s, `${nameOf(s, pid)} ${a.accept ? 'aceitou' : 'recusou'} a troca.`, pid);
     return s;
   }
   if (a.type === 'discard') {
@@ -400,7 +400,7 @@ function applyAction(s: CatanState, pid: string, a: CatanAction): Res {
     }
     moveRes(s.hands[pid], s.bank, a.resources);
     delete s.pendingDiscards[pid];
-    log(s, `${nameOf(s, pid)} descartou ${total(a.resources)} cartas.`);
+    log(s, `${nameOf(s, pid)} descartou ${total(a.resources)} cartas.`, pid);
     if (Object.keys(s.pendingDiscards).length === 0) s.phase = 'robber';
     return s;
   }
@@ -419,7 +419,7 @@ function applyAction(s: CatanState, pid: string, a: CatanAction): Res {
       if (a.type !== 'moveRobber') return { error: 'Mova o ladrão.' };
       if (!s.board.hexes.some((h) => h.id === a.hex) || a.hex === s.robber) return { error: 'Escolha outro hexágono para o ladrão.' };
       s.robber = a.hex;
-      log(s, `${nameOf(s, pid)} moveu o ladrão.`);
+      log(s, `${nameOf(s, pid)} moveu o ladrão.`, pid);
       const c = stealCandidates(s, a.hex, pid);
       if (c.length === 0) finishRobber(s);
       else if (c.length === 1) {
@@ -474,7 +474,7 @@ function applySetup(s: CatanState, pid: string, a: CatanAction): Res {
         }
       }
       moveRes(emptyRes(), s.hands[pid], got);
-      if (total(got)) log(s, `${nameOf(s, pid)} recebeu ${resList(got)}.`);
+      if (total(got)) log(s, `${nameOf(s, pid)} recebeu ${resList(got)}.`, pid);
     }
     return s;
   }
@@ -498,7 +498,7 @@ function doRoll(s: CatanState, pid: string): Res {
   s.rng = rng.state;
   s.dice = d;
   const sum = d[0] + d[1];
-  log(s, `${nameOf(s, pid)} rolou ${sum}.`);
+  log(s, `${nameOf(s, pid)} rolou ${sum}.`, pid);
   if (sum === 7) {
     s.pendingDiscards = {};
     for (const p of s.players) {
@@ -531,7 +531,7 @@ function playKnight(s: CatanState, pid: string): Res {
   if (err) return { error: err };
   useDev(s, pid, 'knight');
   s.knights[pid]++;
-  log(s, `${nameOf(s, pid)} jogou um Cavaleiro.`);
+  log(s, `${nameOf(s, pid)} jogou um Cavaleiro.`, pid);
   updateLargestArmy(s, pid);
   s.afterRobber = s.phase === 'roll' ? 'roll' : 'main';
   s.phase = 'robber';
@@ -557,7 +557,7 @@ function applyMain(s: CatanState, pid: string, a: CatanAction): Res {
       if (!legalSettlementVertices(s, pid, false).includes(a.vertex)) return { error: 'Local inválido para aldeia.' };
       pay(s, pid, COSTS.settlement);
       s.buildings[a.vertex] = { owner: pid, kind: 'settlement' };
-      log(s, `${nameOf(s, pid)} construiu uma aldeia.`);
+      log(s, `${nameOf(s, pid)} construiu uma aldeia.`, pid);
       updateLongestRoad(s);
       break;
     case 'buildCity':
@@ -566,14 +566,14 @@ function applyMain(s: CatanState, pid: string, a: CatanAction): Res {
       if (s.buildings[a.vertex]?.owner !== pid || s.buildings[a.vertex].kind !== 'settlement') return { error: 'Escolha uma aldeia sua.' };
       pay(s, pid, COSTS.city);
       s.buildings[a.vertex] = { owner: pid, kind: 'city' };
-      log(s, `${nameOf(s, pid)} construiu uma cidade.`);
+      log(s, `${nameOf(s, pid)} construiu uma cidade.`, pid);
       break;
     case 'buyDev': {
       if (!hasRes(hand, COSTS.dev)) return { error: 'Recursos insuficientes.' };
       if (s.devDeck.length === 0) return { error: 'Acabaram as cartas de desenvolvimento.' };
       pay(s, pid, COSTS.dev);
       s.dev[pid].push({ type: s.devDeck.pop()!, boughtTurn: s.turnNumber });
-      log(s, `${nameOf(s, pid)} comprou uma carta de desenvolvimento.`);
+      log(s, `${nameOf(s, pid)} comprou uma carta de desenvolvimento.`, pid);
       break;
     }
     case 'playKnight':
@@ -585,7 +585,7 @@ function applyMain(s: CatanState, pid: string, a: CatanAction): Res {
       useDev(s, pid, 'roadBuilding');
       s.freeRoads = Math.min(2, left.road);
       s.phase = 'roadBuilding';
-      log(s, `${nameOf(s, pid)} jogou Construção de estradas.`);
+      log(s, `${nameOf(s, pid)} jogou Construção de estradas.`, pid);
       break;
     }
     case 'playYearOfPlenty': {
@@ -598,7 +598,7 @@ function applyMain(s: CatanState, pid: string, a: CatanAction): Res {
       if (!hasRes(s.bank, want)) return { error: 'O banco não tem esses recursos.' };
       useDev(s, pid, 'yearOfPlenty');
       moveRes(s.bank, hand, want);
-      log(s, `${nameOf(s, pid)} jogou Ano de fartura (${resList(want)}).`);
+      log(s, `${nameOf(s, pid)} jogou Ano de fartura (${resList(want)}).`, pid);
       break;
     }
     case 'playMonopoly': {
@@ -613,7 +613,7 @@ function applyMain(s: CatanState, pid: string, a: CatanAction): Res {
         hand[a.resource] += s.hands[p.id][a.resource];
         s.hands[p.id][a.resource] = 0;
       }
-      log(s, `${nameOf(s, pid)} jogou Monopólio de ${RESOURCE_LABEL[a.resource]} e levou ${n}.`);
+      log(s, `${nameOf(s, pid)} jogou Monopólio de ${RESOURCE_LABEL[a.resource]} e levou ${n}.`, pid);
       break;
     }
     case 'bankTrade': {
@@ -625,7 +625,7 @@ function applyMain(s: CatanState, pid: string, a: CatanAction): Res {
       s.bank[a.give] += rate;
       hand[a.get]++;
       s.bank[a.get]--;
-      log(s, `${nameOf(s, pid)} trocou ${rate} ${RESOURCE_LABEL[a.give]} por 1 ${RESOURCE_LABEL[a.get]} com o banco.`);
+      log(s, `${nameOf(s, pid)} trocou ${rate} ${RESOURCE_LABEL[a.give]} por 1 ${RESOURCE_LABEL[a.get]} com o banco.`, pid);
       break;
     }
     case 'proposeTrade': {
@@ -633,7 +633,7 @@ function applyMain(s: CatanState, pid: string, a: CatanAction): Res {
       if (RESOURCES.some((r) => (a.give[r] ?? 0) > 0 && (a.get[r] ?? 0) > 0)) return { error: 'Não ofereça e peça o mesmo recurso.' };
       if (!hasRes(hand, a.give)) return { error: 'Você não tem o que está oferecendo.' };
       s.trade = { from: pid, give: a.give, get: a.get, responses: Object.fromEntries(s.players.filter((p) => p.id !== pid).map((p) => [p.id, null])) };
-      log(s, `${nameOf(s, pid)} oferece ${resList(a.give)} por ${resList(a.get)}.`);
+      log(s, `${nameOf(s, pid)} oferece ${resList(a.give)} por ${resList(a.get)}.`, pid);
       break;
     }
     case 'confirmTrade': {
@@ -643,14 +643,14 @@ function applyMain(s: CatanState, pid: string, a: CatanAction): Res {
       if (!hasRes(hand, t.give) || !hasRes(s.hands[a.with], t.get)) return { error: 'Alguém não tem mais os recursos da troca.' };
       moveRes(hand, s.hands[a.with], t.give);
       moveRes(s.hands[a.with], hand, t.get);
-      log(s, `${nameOf(s, pid)} trocou com ${nameOf(s, a.with)}.`);
+      log(s, `${nameOf(s, pid)} trocou com ${nameOf(s, a.with)}.`, pid);
       s.trade = null;
       break;
     }
     case 'cancelTrade':
       if (!s.trade) return { error: 'Não há oferta aberta.' };
       s.trade = null;
-      log(s, `${nameOf(s, pid)} cancelou a oferta.`);
+      log(s, `${nameOf(s, pid)} cancelou a oferta.`, pid);
       break;
     case 'endTurn':
       s.turn = (s.turn + 1) % s.players.length;
@@ -790,7 +790,6 @@ export interface CatanView {
   largestArmy: CatanState['largestArmy'];
   trade: TradeOffer | null;
   devPlayedThisTurn: boolean;
-  log: string[];
   winner: string | null;
   vpToWin: number;
 }
@@ -832,7 +831,6 @@ function getPlayerView(s: CatanState, pid: string | null): CatanView {
     largestArmy: s.largestArmy,
     trade: s.trade,
     devPlayedThisTurn: s.devPlayedThisTurn,
-    log: s.log,
     winner: s.winner,
     vpToWin: s.options.vpToWin,
   };
@@ -900,4 +898,5 @@ export const catan: GameDefinition<CatanState, CatanAction, CatanOptions> = {
   getLegalActions: legalActions,
   applyAction,
   getStatus,
+  getLog: (s) => toGameLog(s.log),
 };

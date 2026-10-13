@@ -1,3 +1,5 @@
+import type { GameLog } from './log';
+
 /** Valor de um parâmetro de regra escolhido pelo dono da sala. */
 export type OptionValue = string | number | boolean;
 export type GameOptions = Record<string, OptionValue>;
@@ -79,6 +81,8 @@ export interface GameDefinition<S = any, A = any, O extends GameOptions = GameOp
   getLegalActions(state: S, playerId: string): A[];
   applyAction(state: S, playerId: string, action: A): ActionResult<S>;
   getStatus(state: S): GameStatus;
+  /** Histórico público da partida (igual para todos; nunca informação oculta). Use `toGameLog` para tolerar estado antigo. */
+  getLog?(state: S): GameLog;
 }
 
 export function isActionError<S>(r: ActionResult<S>): r is { error: string } {

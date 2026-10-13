@@ -99,6 +99,43 @@ describe('Dominó', () => {
     expect(JSON.stringify(v)).not.toContain(JSON.stringify(s.hands.p2));
   });
 
+  it('histórico registra jogar (peça e ponta), comprar sem revelar a peça, passar e fim de rodada', () => {
+    let s = fixture([[[3, 3], [0, 1]], [[6, 6], [5, 5]]], { options: opts({ mode: 'compra' }) });
+    s.boneyard = [[3, 4], [2, 2]];
+    s = act(s, 'p1', { type: 'play', tile: [3, 3], side: 'left' });
+    s = act(s, 'p2', { type: 'draw' });
+    s = act(s, 'p2', { type: 'draw' });
+    s = act(s, 'p2', { type: 'play', tile: [3, 4], side: 'left' });
+    const texts = domino.getLog!(s).entries.map((e) => e.text);
+    expect(texts).toEqual(['Jogador 1 abriu com [3|3].', 'Jogador 2 comprou uma peça do monte.', 'Jogador 2 comprou uma peça do monte.', 'Jogador 2 jogou [3|4] na ponta esquerda.']);
+    expect(domino.getLog!(s).entries.map((e) => e.by)).toEqual(['p1', 'p2', 'p2', 'p2']);
+    expect(texts.join()).not.toContain('[2|2]');
+
+    let f = fixture([[[0, 0], [6, 6]], [[5, 5], [4, 4]]]);
+    f = act(f, 'p1', { type: 'play', tile: [0, 0], side: 'left' });
+    f = act(f, 'p2', { type: 'pass' });
+    f = act(f, 'p1', { type: 'pass' });
+    expect(domino.getLog!(f).entries.slice(-3).map((e) => e.text)).toEqual([
+      'Jogador 2 passou a vez.',
+      'Jogador 1 passou a vez.',
+      'Rodada 1: Jogo fechado. Jogador 1 +18 pontos.',
+    ]);
+  });
+
+  it('histórico registra batida e vencedor da partida', () => {
+    let s = fixture([[[3, 5]], [[6, 6], [1, 2]]], { options: opts({ pointsToWin: 15 }) });
+    s = act(s, 'p1', { type: 'play', tile: [3, 5], side: 'left' });
+    expect(domino.getLog!(s).entries.slice(-2).map((e) => e.text)).toEqual(['Rodada 1: Jogador 1 bateu. Jogador 1 +15 pontos.', 'Jogador 1 venceu a partida com 15 pontos!']);
+  });
+
+  it('partida anterior ao histórico (sem log) continua jogável', () => {
+    let s = fixture([[[3, 5], [1, 1]], [[5, 6], [0, 0]]]);
+    delete s.log;
+    expect(domino.getLog!(s)).toEqual({ total: 0, entries: [] });
+    s = act(s, 'p1', { type: 'play', tile: [3, 5], side: 'left' });
+    expect(domino.getLog!(s).total).toBe(1);
+  });
+
   it('passa na bateria de conformidade', () => {
     const leakCheck = (s: DominoState, viewer: string, view: any) => {
       if (view.lastRound) return null; // mãos reveladas no fim da rodada são públicas
@@ -115,6 +152,8 @@ describe('Dominó', () => {
       maxSteps: 4000,
       requireFinish: true,
       leakCheck,
+      // peça só aparece no histórico quando foi jogada na mesa
+      logLeakCheck: (_s, log) => log.entries.find((e) => /\[\d\|\d\]/.test(e.text) && !/(jogou|abriu com) \[\d\|\d\]/.test(e.text))?.text ?? null,
     });
     expect(r.finished).toBe(r.games);
   });

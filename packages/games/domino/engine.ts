@@ -1,4 +1,4 @@
-import { Rng, type GameDefinition, type GameStatus } from '@tablehub/game-sdk';
+import { Rng, pushLog, toGameLog, type GameDefinition, type GameLog, type GameStatus } from '@tablehub/game-sdk';
 
 export type Tile = [number, number]; // a <= b
 export type Side = 'left' | 'right';
@@ -45,6 +45,8 @@ export interface DominoState {
   scores: Record<string, number>; // por jogador (em duplas, ambos recebem os pontos da dupla)
   lastRound: RoundSummary | null;
   lastAction: { playerId: string; text: string } | null;
+  /** Histórico público; ausente em partidas anteriores ao histórico comum. */
+  log?: GameLog;
   winners: string[] | null;
 }
 
@@ -130,12 +132,19 @@ function setup(players: { id: string; name: string }[], options: DominoOptions, 
     scores: Object.fromEntries(players.map((p) => [p.id, 0])),
     lastRound: null,
     lastAction: null,
+    log: { total: 0, entries: [] },
     winners: null,
   };
   deal(s, rng, null);
   s.rng = rng.state;
   return s;
 }
+
+function log(s: DominoState, text: string, by?: string): void {
+  s.log = pushLog(s.log, text, by);
+}
+
+const names = (s: DominoState, ids: string[]) => s.players.filter((p) => ids.includes(p.id)).map((p) => p.name).join(' e ');
 
 function nextTurn(s: DominoState): void {
   s.turn = (s.turn + 1) % s.players.length;
@@ -165,10 +174,13 @@ function endRound(s: DominoState, reason: 'batida' | 'fechado', winnerIdx: numbe
   }
 
   s.lastRound = { round: s.round, reason, winners, points, hands };
+  const how = reason === 'batida' ? `${names(s, [s.players[winnerIdx!].id])} bateu` : 'Jogo fechado';
+  log(s, winners.length ? `Rodada ${s.round}: ${how}. ${names(s, winners)} +${points} pontos.` : `Rodada ${s.round}: ${how}, empate. Ninguém pontua.`);
   const champs = s.players.filter((p) => s.scores[p.id] >= s.options.pointsToWin);
   if (champs.length > 0) {
     const max = Math.max(...champs.map((p) => s.scores[p.id]));
     s.winners = champs.filter((p) => s.scores[p.id] === max).map((p) => p.id);
+    log(s, `${names(s, s.winners)} venceu a partida com ${max} pontos!`);
     return;
   }
 
@@ -202,6 +214,7 @@ function applyAction(s: DominoState, pid: string, a: DominoAction): DominoState 
       s.forcedOpening = null;
       s.passes = 0;
       s.lastAction = { playerId: pid, text: `${name} jogou ${tileLabel(tile)}` };
+      log(s, `${name} ${e ? `jogou ${tileLabel(tile)} na ponta ${a.side === 'left' ? 'esquerda' : 'direita'}` : `abriu com ${tileLabel(tile)}`}.`, pid);
       if (hand.length === 0) {
         endRound(s, 'batida', idx);
         return s;
@@ -215,6 +228,7 @@ function applyAction(s: DominoState, pid: string, a: DominoAction): DominoState 
       if (s.boneyard.length === 0) return { error: 'O monte acabou; passe a vez.' };
       hand.push(s.boneyard.pop()!);
       s.lastAction = { playerId: pid, text: `${name} comprou uma peça` };
+      log(s, `${name} comprou uma peça do monte.`, pid);
       return s;
     }
     case 'pass': {
@@ -222,6 +236,7 @@ function applyAction(s: DominoState, pid: string, a: DominoAction): DominoState 
       if (s.options.mode === 'compra' && s.boneyard.length > 0) return { error: 'Compre do monte antes de passar.' };
       s.passes++;
       s.lastAction = { playerId: pid, text: `${name} passou` };
+      log(s, `${name} passou a vez.`, pid);
       if (s.passes >= s.players.length) {
         endRound(s, 'fechado', null);
         return s;
@@ -346,4 +361,5 @@ export const domino: GameDefinition<DominoState, DominoAction, DominoOptions> = 
   getLegalActions: legalActions,
   applyAction,
   getStatus: status,
+  getLog: (s) => toGameLog(s.log),
 };

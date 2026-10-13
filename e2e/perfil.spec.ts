@@ -78,8 +78,8 @@ test('bots: nome da lista, selo de robô e "pensando…" na vez do bot', async (
   await expect(ana.locator('.player-item.is-bot .avatar-bot')).toHaveCount(3);
 
   await startGame(ana);
-  await expect(ana.locator('.truco-seat .avatar-bot')).toHaveCount(3);
-  const thinking = ana.locator('.truco-seat .thinking');
+  await expect(ana.locator('.gt-seat .avatar-bot')).toHaveCount(3);
+  const thinking = ana.locator('.gt-seat .thinking');
   await expect(thinking.or(ana.locator('.status-pill.my-turn'))).toBeVisible({ timeout: 15_000 });
   if (!(await thinking.isVisible())) await ana.locator('.truco-hand .pcard-btn:enabled').first().click();
   await expect(thinking).toBeVisible({ timeout: 15_000 });

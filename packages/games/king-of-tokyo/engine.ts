@@ -1,4 +1,4 @@
-import { Rng, type GameDefinition, type GameStatus } from '@tablehub/game-sdk';
+import { Rng, emptyLog, pushLog, toGameLog, type GameDefinition, type GameLog, type GameStatus } from '@tablehub/game-sdk';
 import { CARD_BY_ID, fullDeck } from './cards';
 
 export * from './cards';
@@ -130,12 +130,12 @@ export interface KingOfTokyoState {
   pending: Pending | null;
   /** Respostas já dadas na janela simultânea atual. */
   answers: Record<string, boolean>;
-  log: string[];
+  /** Formato antigo (`string[]`) em partidas anteriores ao histórico comum. */
+  log: GameLog | string[];
   winners: string[] | null;
 }
 
 const WIN_VP = 20;
-const LOG_MAX = 40;
 
 // ---------- utilitários ----------
 
@@ -146,9 +146,8 @@ const bayOpen = (s: KingOfTokyoState) => alive(s).length >= 5;
 const occupant = (s: KingOfTokyoState, place: Place) => alive(s).find((m) => m.place === place) ?? null;
 const cardName = (id: string) => CARD_BY_ID[id]?.name ?? id;
 
-function log(s: KingOfTokyoState, text: string) {
-  s.log.push(text);
-  if (s.log.length > LOG_MAX) s.log.splice(0, s.log.length - LOG_MAX);
+function log(s: KingOfTokyoState, text: string, by?: string) {
+  s.log = pushLog(s.log, text, by);
 }
 
 /** Quantas vezes o monstro tem o efeito da carta (cópias do Imitador incluídas). */
@@ -255,7 +254,7 @@ function setup(players: { id: string; name: string }[], options: KingOfTokyoOpti
     queue: [],
     pending: null,
     answers: {},
-    log: [],
+    log: emptyLog(),
     winners: null,
   };
   players.forEach((p, i) => {
@@ -272,7 +271,7 @@ function setup(players: { id: string; name: string }[], options: KingOfTokyoOpti
       const n = Array.from({ length: 6 }, () => rollFace(rng)).filter((f) => f === 'claw').length;
       return { i, n };
     });
-    s.log.push('Sorteio do 1º jogador: ' + claws.map((c) => `${s.players[c.i].name} ${c.n} garra(s)`).join(', ') + '.');
+    log(s, 'Sorteio do 1º jogador: ' + claws.map((c) => `${s.players[c.i].name} ${c.n} garra(s)`).join(', ') + '.');
     const best = Math.max(...claws.map((c) => c.n));
     tied = claws.filter((c) => c.n === best).map((c) => c.i);
   }
@@ -297,12 +296,12 @@ function startTurn(s: KingOfTokyoState, freeze: number) {
     const take = Math.min(2, c.energy ?? 0);
     c.energy = (c.energy ?? 0) - take;
     m.energy += take;
-    if (take) log(s, `${m.name} pegou ${take} energia da Bateria de Monstros.`);
+    if (take) log(s, `${m.name} pegou ${take} energia da Bateria de Monstros.`, m.id);
     if (!c.energy) removeCard(s, m, i);
   }
   if (inTokyo(m)) {
     m.vp += 2 + count(m, 'urbanivoro');
-    log(s, `${m.name} começou o turno em Tóquio: +${2 + count(m, 'urbanivoro')} PV.`);
+    log(s, `${m.name} começou o turno em Tóquio: +${2 + count(m, 'urbanivoro')} PV.`, m.id);
   }
 }
 
@@ -357,9 +356,9 @@ function step(s: KingOfTokyoState, e: Effect): boolean {
         const k = Math.min(h, m.shrink);
         m.shrink -= k;
         h -= k;
-        if (p || k) log(s, `${m.name} removeu ${p + k} ficha(s).`);
+        if (p || k) log(s, `${m.name} removeu ${p + k} ficha(s).`, m.id);
         const got = heal(m, h);
-        if (got) log(s, `${m.name} curou ${got}.`);
+        if (got) log(s, `${m.name} curou ${got}.`, m.id);
       }
       return true;
     }
@@ -384,7 +383,7 @@ function step(s: KingOfTokyoState, e: Effect): boolean {
       if (place) {
         m.place = place;
         m.vp += 1;
-        log(s, `${m.name} entrou em ${place === 'city' ? 'Tóquio (Cidade)' : 'Tóquio (Baía)'}: +1 PV.`);
+        log(s, `${m.name} entrou em ${place === 'city' ? 'Tóquio (Cidade)' : 'Tóquio (Baía)'}: +1 PV.`, m.id);
         const burrower = s.ts.burrowed[place];
         if (burrower && s.monsters[burrower].alive) push(s, { k: 'damage', hits: [{ pid: m.id, n: 1 }], src: burrower });
       }
@@ -436,7 +435,7 @@ function stepAttack(s: KingOfTokyoState): boolean {
     if (inTokyo(m)) n += count(m, 'escavando');
     if (count(m, 'monstro-alfa')) {
       m.vp += count(m, 'monstro-alfa');
-      log(s, `${m.name} atacou: +${count(m, 'monstro-alfa')} PV (Monstro Alfa).`);
+      log(s, `${m.name} atacou: +${count(m, 'monstro-alfa')} PV (Monstro Alfa).`, m.id);
     }
   }
   n += count(m, 'ataque-de-acido');
@@ -444,7 +443,7 @@ function stepAttack(s: KingOfTokyoState): boolean {
   n = outgoing(s, m, n);
   const targets = attackTargets(s, m);
   if (n > 0 && targets.length > 0) {
-    log(s, `${m.name} atacou ${targets.map((t) => t.name).join(', ')} com ${n} de dano.`);
+    log(s, `${m.name} atacou ${targets.map((t) => t.name).join(', ')} com ${n} de dano.`, m.id);
     push(s, { k: 'damage', hits: targets.map((t) => ({ pid: t.id, n })), src: m.id, attack: true });
   }
   return true;
@@ -480,7 +479,7 @@ function stepDamage(s: KingOfTokyoState, e: Extract<Effect, { k: 'damage' }>): b
     const loss = Math.min(n, m.hp);
     m.hp -= loss;
     damaged.push(m.id);
-    log(s, `${m.name} sofreu ${n} de dano.`);
+    log(s, `${m.name} sofreu ${n} de dano.`, m.id);
     if (loss >= 2 && count(m, 'ele-so-esta-ficando-mais-forte') > 0) gainEnergy(m, count(m, 'ele-so-esta-ficando-mais-forte'));
     if (e.attack) {
       if (!s.ts.attackHit.includes(m.id)) s.ts.attackHit.push(m.id);
@@ -513,7 +512,7 @@ function checkDeaths(s: KingOfTokyoState) {
       const n = count(o, 'devorador-de-mortos');
       if (n) {
         o.vp += 3 * n;
-        log(s, `${o.name} ganhou ${3 * n} PV (Devorador de Mortos).`);
+        log(s, `${o.name} ganhou ${3 * n} PV (Devorador de Mortos).`, o.id);
       }
     }
   }
@@ -528,12 +527,12 @@ function checkDeaths(s: KingOfTokyoState) {
       d.hp = 10;
       d.poison = 0;
       d.shrink = 0;
-      log(s, `${d.name} chegou a 0 de Vida, mas Ele Tem um Filho! Volta com 10 de Vida.`);
+      log(s, `${d.name} chegou a 0 de Vida, mas Ele Tem um Filho! Volta com 10 de Vida.`, d.id);
     } else {
       d.alive = false;
       d.hp = 0;
       d.extraTurns = [];
-      log(s, `${d.name} foi eliminado.`);
+      log(s, `${d.name} foi eliminado.`, d.id);
     }
   }
   const living = alive(s);
@@ -559,12 +558,12 @@ function finishTurn(s: KingOfTokyoState) {
     const acc = count(m, 'acumulador-de-energia');
     if (acc && m.energy >= 6) {
       m.vp += acc * Math.floor(m.energy / 6);
-      log(s, `${m.name} ganhou ${acc * Math.floor(m.energy / 6)} PV (Acumulador de Energia).`);
+      log(s, `${m.name} ganhou ${acc * Math.floor(m.energy / 6)} PV (Acumulador de Energia).`, m.id);
     }
     if (count(m, 'energia-solar') && m.energy === 0) gainEnergy(m, count(m, 'energia-solar'));
     if (count(m, 'herbivoro') && !s.ts.dealtDamage) {
       m.vp += count(m, 'herbivoro');
-      log(s, `${m.name} ganhou ${count(m, 'herbivoro')} PV (Herbívoro).`);
+      log(s, `${m.name} ganhou ${count(m, 'herbivoro')} PV (Herbívoro).`, m.id);
     }
   }
   const living = alive(s);
@@ -572,7 +571,7 @@ function finishTurn(s: KingOfTokyoState) {
     const n = count(o, 'torcendo-pelo-azarao');
     if (n && living.every((x) => x.id === o.id || o.vp < x.vp)) {
       o.vp += n;
-      log(s, `${o.name} ganhou ${n} PV (Torcendo pelo Azarão).`);
+      log(s, `${o.name} ganhou ${n} PV (Torcendo pelo Azarão).`, o.id);
     }
   }
   for (const x of Object.values(s.monsters)) x.shielded = false;
@@ -630,7 +629,7 @@ function acquire(s: KingOfTokyoState, m: Monster, id: string, owned?: OwnedCard)
   const def = CARD_BY_ID[id];
   const news = count(m, 'equipe-exclusiva-de-jornalismo');
   if (news) m.vp += news;
-  log(s, `${m.name} comprou ${def.name}.`);
+  log(s, `${m.name} comprou ${def.name}.`, m.id);
   if (def.kind === 'keep') {
     const c: OwnedCard = owned ?? { id };
     m.cards.push(c);
@@ -663,7 +662,7 @@ function acquire(s: KingOfTokyoState, m: Monster, id: string, owned?: OwnedCard)
         const c = occupant(s, 'city');
         if (c) c.place = 'out';
         m.place = 'city';
-        log(s, `${m.name} assumiu a Cidade de Tóquio.`);
+        log(s, `${m.name} assumiu a Cidade de Tóquio.`, m.id);
       }
       break;
     case 'energizar': gainEnergy(m, 9); break;
@@ -703,7 +702,7 @@ function setMimic(s: KingOfTokyoState, m: Monster, cardId: string | null) {
   k.charges = cardId === 'nuvem-de-fumaca' ? 3 : undefined;
   if (!k.charges) delete k.charges;
   clampHp(m);
-  if (cardId) log(s, `${m.name} copiou ${cardName(cardId)} com o Imitador.`);
+  if (cardId) log(s, `${m.name} copiou ${cardName(cardId)} com o Imitador.`, m.id);
 }
 
 function canSeeTop(s: KingOfTokyoState, pid: string): boolean {
@@ -761,7 +760,7 @@ function resolveDice(s: KingOfTokyoState) {
     parts.push(`+${n('energy')} energia`);
   }
   s.ts.heartsLeft = n('heart');
-  log(s, `${m.name} resolveu ${faces.map(faceLabel).join(' ') || 'nenhum dado'}${parts.length ? ': ' + parts.join(', ') : ''}.`);
+  log(s, `${m.name} resolveu ${faces.map(faceLabel).join(' ') || 'nenhum dado'}${parts.length ? ': ' + parts.join(', ') : ''}.`, m.id);
   s.queue.push({ k: 'healRay' }, { k: 'selfHeal' }, { k: 'attack' }, { k: 'yield' }, { k: 'enter' }, { k: 'toBuy' });
 }
 
@@ -792,7 +791,7 @@ function act(s: KingOfTokyoState, pid: string, a: KingOfTokyoAction): string | n
     if (me.hp >= maxHp(me)) return 'Sua Vida já está no máximo.';
     me.energy -= 2;
     heal(me, 1);
-    log(s, `${me.name} usou Cura Rápida.`);
+    log(s, `${me.name} usou Cura Rápida.`, me.id);
     return null;
   }
 
@@ -806,7 +805,7 @@ function act(s: KingOfTokyoState, pid: string, a: KingOfTokyoAction): string | n
           if (me.energy < 2) return 'Energia insuficiente.';
           me.energy -= 2;
           me.shielded = true;
-          log(s, `${me.name} usou as Asas: não sofre dano até o fim do turno.`);
+          log(s, `${me.name} usou as Asas: não sofre dano até o fim do turno.`, me.id);
         }
         answer(s, pid);
         return null;
@@ -816,13 +815,13 @@ function act(s: KingOfTokyoState, pid: string, a: KingOfTokyoAction): string | n
         if (a.leave) {
           const from = me.place;
           me.place = 'out';
-          log(s, `${me.name} cedeu Tóquio.`);
+          log(s, `${me.name} cedeu Tóquio.`, me.id);
           if (count(me, 'jatos') && s.ts.clawLoss[pid]) {
             me.hp = Math.min(maxHp(me), me.hp + s.ts.clawLoss[pid]);
-            log(s, `${me.name} usou os Jatos e não sofreu o dano.`);
+            log(s, `${me.name} usou os Jatos e não sofreu o dano.`, me.id);
           }
           if (count(me, 'escavando') && from !== 'out') s.ts.burrowed[from as 'city' | 'bay'] = pid;
-        } else log(s, `${me.name} ficou em Tóquio.`);
+        } else log(s, `${me.name} ficou em Tóquio.`, me.id);
         answer(s, pid);
         return null;
       }
@@ -836,7 +835,7 @@ function act(s: KingOfTokyoState, pid: string, a: KingOfTokyoAction): string | n
           me.energy -= cost;
           s.market[p.slot] = null;
           answer(s, pid);
-          log(s, `${me.name} usou Oportunista.`);
+          log(s, `${me.name} usou Oportunista.`, me.id);
           acquire(s, me, id);
           reveal(s, p.slot);
           return null;
@@ -849,7 +848,7 @@ function act(s: KingOfTokyoState, pid: string, a: KingOfTokyoAction): string | n
         if (a.die !== null) {
           if (!validDie(s, a.die)) return 'Dado inválido.';
           const f = withRng(s, rollFace);
-          log(s, `${me.name} usou a Sonda Psíquica no dado ${a.die + 1}: ${faceLabel(s.dice[a.die].face)} → ${faceLabel(f)}.`);
+          log(s, `${me.name} usou a Sonda Psíquica no dado ${a.die + 1}: ${faceLabel(s.dice[a.die].face)} → ${faceLabel(f)}.`, me.id);
           s.dice[a.die].face = f;
           s.ts.probed.push(pid);
           if (f === 'heart') {
@@ -877,7 +876,7 @@ function act(s: KingOfTokyoState, pid: string, a: KingOfTokyoAction): string | n
         const pay = Math.min(t.energy, 2 * got);
         t.energy -= pay;
         me.energy += pay;
-        log(s, `${me.name} curou ${got} de ${t.name} com o Raio de Cura (recebeu ${pay} energia).`);
+        log(s, `${me.name} curou ${got} de ${t.name} com o Raio de Cura (recebeu ${pay} energia).`, me.id);
         const more = s.ts.heartsLeft > 0 && alive(s).some((x) => x.id !== pid && x.hp < maxHp(x));
         if (!more) answer(s, pid);
         return null;
@@ -890,7 +889,7 @@ function act(s: KingOfTokyoState, pid: string, a: KingOfTokyoAction): string | n
         me.energy -= n;
         if (i >= 0) {
           me.cards[i].energy = 2 * n;
-          log(s, `${me.name} colocou ${n} energia na Bateria (o banco dobrou para ${2 * n}).`);
+          log(s, `${me.name} colocou ${n} energia na Bateria (o banco dobrou para ${2 * n}).`, me.id);
           if (n === 0) removeCard(s, me, i);
         }
         answer(s, pid);
@@ -924,7 +923,7 @@ function act(s: KingOfTokyoState, pid: string, a: KingOfTokyoAction): string | n
         }
         withRng(s, (r) => s.dice.forEach((d) => !d.kept && (d.face = rollFace(r))));
         s.ts.rollsUsed++;
-        log(s, `${m.name} rolou: ${s.dice.map((d) => faceLabel(d.face)).join(' ') || 'nenhum dado'}.`);
+        log(s, `${m.name} rolou: ${s.dice.map((d) => faceLabel(d.face)).join(' ') || 'nenhum dado'}.`, m.id);
         afterRoll(s);
         return null;
       }
@@ -939,7 +938,7 @@ function act(s: KingOfTokyoState, pid: string, a: KingOfTokyoAction): string | n
         if (m.energy < 2) return 'Energia insuficiente (Alongado custa 2).';
         m.energy -= 2;
         s.dice[a.die].face = a.face;
-        log(s, `${m.name} usou Alongado: dado ${a.die + 1} virou ${faceLabel(a.face)}.`);
+        log(s, `${m.name} usou Alongado: dado ${a.die + 1} virou ${faceLabel(a.face)}.`, m.id);
         return null;
       }
       case 'twist': {
@@ -947,7 +946,7 @@ function act(s: KingOfTokyoState, pid: string, a: KingOfTokyoAction): string | n
         if (s.ts.rollsUsed === 0) return 'Role os dados antes.';
         if (!validDie(s, a.die) || !validFace(a.face)) return 'Dado inválido.';
         s.dice[a.die].face = a.face;
-        log(s, `${m.name} usou Reviravolta: dado ${a.die + 1} virou ${faceLabel(a.face)}.`);
+        log(s, `${m.name} usou Reviravolta: dado ${a.die + 1} virou ${faceLabel(a.face)}.`, m.id);
         useUp(s, m, 'reviravolta');
         return null;
       }
@@ -958,7 +957,7 @@ function act(s: KingOfTokyoState, pid: string, a: KingOfTokyoAction): string | n
         if (!validDie(s, a.die)) return 'Dado inválido.';
         s.dice[a.die].face = '1';
         s.ts.herdUsed = true;
-        log(s, `${m.name} usou Chefe do Rebanho: dado ${a.die + 1} virou 1.`);
+        log(s, `${m.name} usou Chefe do Rebanho: dado ${a.die + 1} virou 1.`, m.id);
         return null;
       }
       case 'stalk': {
@@ -967,7 +966,7 @@ function act(s: KingOfTokyoState, pid: string, a: KingOfTokyoAction): string | n
         const threes = s.dice.filter((d) => d.face === '3');
         if (!threes.length) return 'Você não tem dados com 3.';
         withRng(s, (r) => threes.forEach((d) => (d.face = rollFace(r))));
-        log(s, `${m.name} rerrolou os 3 (Espreitador): ${s.dice.map((d) => faceLabel(d.face)).join(' ')}.`);
+        log(s, `${m.name} rerrolou os 3 (Espreitador): ${s.dice.map((d) => faceLabel(d.face)).join(' ')}.`, m.id);
         return null;
       }
       case 'smoke': {
@@ -976,7 +975,7 @@ function act(s: KingOfTokyoState, pid: string, a: KingOfTokyoAction): string | n
         if (s.ts.rollsUsed === 0 || s.ts.rollsUsed < s.ts.rollsMax) return 'Use a Nuvem de Fumaça quando acabarem as rolagens.';
         c.charges = (c.charges ?? 0) - 1;
         s.ts.rollsMax++;
-        log(s, `${m.name} gastou uma carga da Nuvem de Fumaça: +1 rolagem.`);
+        log(s, `${m.name} gastou uma carga da Nuvem de Fumaça: +1 rolagem.`, m.id);
         if (!c.charges) {
           if (c.id === 'imitador') c.copy = null;
           else removeCard(s, m, m.cards.indexOf(c));
@@ -989,7 +988,7 @@ function act(s: KingOfTokyoState, pid: string, a: KingOfTokyoAction): string | n
         if (m.energy < 1) return 'Energia insuficiente (Telepata custa 1).';
         m.energy -= 1;
         s.ts.rollsMax++;
-        log(s, `${m.name} pagou 1 energia (Telepata): +1 rolagem.`);
+        log(s, `${m.name} pagou 1 energia (Telepata): +1 rolagem.`, m.id);
         return null;
       }
       case 'mimic': {
@@ -1048,7 +1047,7 @@ function act(s: KingOfTokyoState, pid: string, a: KingOfTokyoAction): string | n
         if (m.energy < 2) return 'Energia insuficiente (limpar a vitrine custa 2).';
         m.energy -= 2;
         for (const id of s.market) if (id) s.discard.push(id);
-        log(s, `${m.name} limpou a vitrine.`);
+        log(s, `${m.name} limpou a vitrine.`, m.id);
         s.market = [null, null, null];
         for (let i = 2; i >= 0; i--) reveal(s, i);
         return null;
@@ -1060,7 +1059,7 @@ function act(s: KingOfTokyoState, pid: string, a: KingOfTokyoAction): string | n
         const value = CARD_BY_ID[a.cardId].cost;
         removeCard(s, m, i);
         m.energy += value;
-        log(s, `${m.name} descartou ${cardName(a.cardId)} (Metamorfose): +${value} energia.`);
+        log(s, `${m.name} descartou ${cardName(a.cardId)} (Metamorfose): +${value} energia.`, m.id);
         return null;
       }
       case 'endTurn':
@@ -1175,7 +1174,6 @@ export interface KingOfTokyoView {
   discard: string[];
   pending: { type: Pending['type']; players: string[]; slot?: number } | null;
   bay: boolean;
-  log: string[];
   winners: string[] | null;
 }
 
@@ -1197,7 +1195,6 @@ function view(s: KingOfTokyoState, pid: string | null): KingOfTokyoView {
     discard: s.discard,
     pending: s.pending ? { type: s.pending.type, players: pendingPlayers(s), ...(s.pending.type === 'opportunist' ? { slot: s.pending.slot } : {}) } : null,
     bay: bayOpen(s),
-    log: s.log,
     winners: s.winners,
   };
 }
@@ -1259,6 +1256,7 @@ export const kingOfTokyo: GameDefinition<KingOfTokyoState, KingOfTokyoAction, Ki
   getLegalActions: legalActions,
   applyAction,
   getStatus,
+  getLog: (s) => toGameLog(s.log),
 };
 
 /** Utilitários para testes: montar estados controlados. */

@@ -3,6 +3,7 @@ import { catanGraph, RESOURCE_LABEL, RESOURCES, type Resource } from '@tablehub/
 import { COSTS, DEV_LABEL, type CatanAction, type CatanView, type DevType, type Resources } from '@tablehub/games/catan/engine';
 import { SeatAvatar } from '../../components/avatars/SeatAvatar';
 import { PanZoom } from '../../components/board/PanZoom';
+import { useFreshKeys } from '../../components/table/anim';
 import type { BoardProps } from '../registry';
 import { BOARD_ART, CityShape, ResourceGlyph, RESOURCE_COLOR, RobberShape, SettlementShape, TERRAIN_FILL, TerrainGlyph } from './art';
 import './catan.css';
@@ -62,6 +63,8 @@ export default function CatanBoard({ game, room, you, act }: BoardProps) {
   const colorOf = (pid: string) => v.players.find((p) => p.id === pid)?.color ?? BOARD_ART.unknownPlayer;
   const nameOf = (pid: string) => (pid === you ? 'Você' : (v.players.find((p) => p.id === pid)?.name ?? pid));
   const myTurn = v.current === you;
+  // peças recém-construídas "caem" no lugar
+  const fresh = useFreshKeys([...Object.keys(v.roads), ...Object.entries(v.buildings).map(([vid, b]) => `${vid}:${b.kind}`)]);
 
   const legalOf = <T extends CatanAction['type']>(t: T) => legal.filter((a): a is Extract<CatanAction, { type: T }> => a.type === t);
 
@@ -200,7 +203,7 @@ export default function CatanBoard({ game, room, you, act }: BoardProps) {
             {Object.entries(v.roads).map(([eid, owner]) => {
               const [a, b] = g.edges[eid].vertices.map((vid) => g.vertices[vid]);
               return (
-                <g key={eid}>
+                <g key={eid} className={fresh.has(eid) ? 'catan-drop' : undefined}>
                   <line x1={a.x * S} y1={a.y * S} x2={b.x * S} y2={b.y * S} stroke={BOARD_ART.roadOutline} strokeWidth={10} strokeLinecap="round" />
                   <line x1={a.x * S} y1={a.y * S} x2={b.x * S} y2={b.y * S} stroke={colorOf(owner)} strokeWidth={6.5} strokeLinecap="round" />
                 </g>
@@ -223,7 +226,9 @@ export default function CatanBoard({ game, room, you, act }: BoardProps) {
               const p = g.vertices[vid];
               return (
                 <g key={vid} transform={`translate(${p.x * S} ${p.y * S})`}>
-                  {b.kind === 'city' ? <CityShape color={colorOf(b.owner)} /> : <SettlementShape color={colorOf(b.owner)} />}
+                  <g className={fresh.has(`${vid}:${b.kind}`) ? 'catan-drop' : undefined}>
+                    {b.kind === 'city' ? <CityShape color={colorOf(b.owner)} /> : <SettlementShape color={colorOf(b.owner)} />}
+                  </g>
                 </g>
               );
             })}
@@ -274,15 +279,6 @@ export default function CatanBoard({ game, room, you, act }: BoardProps) {
               Peças restantes: {me.pieces.road} estradas · {me.pieces.settlement} aldeias · {me.pieces.city} cidades · {v.devDeckCount} cartas no baralho
             </div>
           )}
-
-          <details className="card">
-            <summary>Histórico</summary>
-            <div className="log">
-              {[...v.log].reverse().map((l, i) => (
-                <div key={i}>{l}</div>
-              ))}
-            </div>
-          </details>
         </div>
       </div>
     </div>

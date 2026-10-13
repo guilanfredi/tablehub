@@ -89,6 +89,21 @@ describe('Truco Paulista — vazas', () => {
     expect(isActionError(truco.applyAction(structuredClone(s), 'p1', { type: 'play', index: 0, faceDown: true }))).toBe(true);
   });
 
+  it('histórico não revela carta encoberta e tolera o formato antigo', () => {
+    let s = fixture([
+      [c('3', 'paus'), c('2', 'paus'), c('4', 'ouros')],
+      [c('4', 'paus'), c('5', 'paus'), c('6', 'ouros')],
+    ]);
+    (s as any).log = ['linha antiga'];
+    s = act(s, 'p1', { type: 'play', index: 0 });
+    s = act(s, 'p2', { type: 'play', index: 0 });
+    s = act(s, 'p1', { type: 'play', index: 1, faceDown: true });
+    const log = truco.getLog!(s);
+    expect(log.entries[0]).toEqual({ text: 'linha antiga' });
+    expect(log.entries.at(-1)).toEqual({ text: 'Jogador 1 jogou uma carta encoberta', by: 'p1' });
+    expect(log.total).toBe(log.entries.length);
+  });
+
   it('em duplas, cartas iguais do mesmo time não empatam a vaza', () => {
     let s = fixture(
       [

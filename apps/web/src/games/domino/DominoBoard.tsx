@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DominoAction, DominoView, Side, Tile } from '@tablehub/games/domino/engine';
-import { SeatAvatar } from '../../components/avatars/SeatAvatar';
+import { useFreshKeys, useLeaving } from '../../components/table/anim';
+import { GameTableLayout, fromSeat } from '../../components/table/GameTableLayout';
+import { arrangeSeats } from '../../components/table/seats';
 import type { BoardProps } from '../registry';
 import { DominoTile, TileBack } from './art';
 import './domino.css';
@@ -9,20 +11,7 @@ const ROW = 7;
 
 function Boneyard({ count, canDraw, onDraw }: { count: number; canDraw: boolean; onDraw: () => void }) {
   // peças que acabaram de sair do monte ficam um instante na ponta para animar a saída
-  const [leaving, setLeaving] = useState(0);
-  const prev = useRef(count);
-  useEffect(() => {
-    const gone = prev.current - count;
-    prev.current = count;
-    if (gone <= 0) {
-      setLeaving(0);
-      return;
-    }
-    setLeaving(gone);
-    const t = setTimeout(() => setLeaving(0), 300);
-    return () => clearTimeout(t);
-  }, [count]);
-
+  const leaving = useLeaving(count);
   const total = count + leaving;
   if (total === 0) return null;
   const rows: number[][] = [];
@@ -51,6 +40,20 @@ function Boneyard({ count, canDraw, onDraw }: { count: number; canDraw: boolean;
     <div className="domino-boneyard" role="img" aria-label={`Monte: ${count} peças`}>
       {content}
     </div>
+  );
+}
+
+/** Mão de um oponente em miniatura: peças que saem somem com fade. */
+function MiniHand({ count }: { count: number }) {
+  const leaving = useLeaving(count);
+  return (
+    <span className="domino-mini-hand" aria-hidden="true">
+      {Array.from({ length: count + leaving }, (_, i) => (
+        <span key={i} className={i >= count ? 'leaving' : ''}>
+          <TileBack width={7} />
+        </span>
+      ))}
+    </span>
   );
 }
 
@@ -87,6 +90,12 @@ export default function DominoBoard({ game, room, you, act }: BoardProps) {
   const drawn = useDrawnTiles(v.myHand, v.round);
   const draw = () => act({ type: 'draw' });
   const boneyardEmpty = myTurn && canPass && v.options.mode === 'compra';
+  const places = arrangeSeats(
+    v.players.map((p) => p.id),
+    you,
+  );
+  const lineKeys = v.line.map((pt) => `${v.round}:${key(pt.tile)}`);
+  const fresh = useFreshKeys(lineKeys);
 
   function choose(tile: Tile) {
     const options = plays.filter((p) => same(p.tile, tile));
@@ -105,31 +114,24 @@ export default function DominoBoard({ game, room, you, act }: BoardProps) {
 
   const me = v.players.find((p) => p.id === you);
   const teams = v.options.teams;
+  const counters = (id: string) => {
+    const p = v.players.find((x) => x.id === id)!;
+    return (
+      <>
+        {teams && <span className="badge">{p.team === 0 ? 'A' : 'B'}</span>}
+        {id !== you && <MiniHand count={p.tiles} />}
+        <span>
+          {p.tiles} {p.tiles === 1 ? 'peça' : 'peças'}
+        </span>
+        <span>
+          · <strong>{p.score}</strong> pts
+        </span>
+      </>
+    );
+  };
 
   return (
     <div className="stack">
-      <div className="scoreboard">
-        {v.players.map((p) => (
-          <div key={p.id} className={`score-chip ${p.id === v.turn ? 'active' : ''}`}>
-            {teams && <span className="badge">{p.team === 0 ? 'A' : 'B'}</span>}
-            <SeatAvatar game={game} room={room} id={p.id} size={26} />
-            <span>{p.id === you ? 'Você' : p.name}</span>
-            {p.id !== you && (
-              <span className="domino-mini-hand" aria-hidden="true">
-                {Array.from({ length: p.tiles }, (_, i) => (
-                  <TileBack key={i} width={7} />
-                ))}
-              </span>
-            )}
-            <span className="muted">· {p.tiles} peças</span>
-            <strong>{p.score}</strong>
-          </div>
-        ))}
-        <div className="score-chip muted">
-          Rodada {v.round} · meta {v.options.pointsToWin}
-        </div>
-      </div>
-
       {v.lastRound && v.lastRound.round === v.round - 1 && (
         <div className="banner banner-info">
           Rodada {v.lastRound.round}: {v.lastRound.reason === 'batida' ? 'batida' : 'jogo fechado'} —{' '}
@@ -137,14 +139,28 @@ export default function DominoBoard({ game, room, you, act }: BoardProps) {
         </div>
       )}
 
-      <div className="felt domino-felt">
-        <Boneyard count={v.boneyard} canDraw={myTurn && canDraw} onDraw={draw} />
+      <GameTableLayout
+        game={game}
+        room={room}
+        you={you}
+        places={places}
+        counters={counters}
+        className="domino-table"
+        cornerLeft={
+          <span className="badge">
+            Rodada {v.round} · meta {v.options.pointsToWin}
+          </span>
+        }
+        cornerRight={<Boneyard count={v.boneyard} canDraw={myTurn && canDraw} onDraw={draw} />}
+      >
         {v.line.length === 0 ? (
           <p className="domino-empty">{myTurn ? (v.forcedOpening ? `Abra com o [${v.forcedOpening[0]}|${v.forcedOpening[1]}]` : 'Jogue qualquer peça para abrir') : 'Aguardando a primeira peça…'}</p>
         ) : (
           <div className="domino-line" aria-label="Mesa">
             {v.line.map((pt, i) => (
-              <DominoTile key={i} a={pt.shown[0]} b={pt.shown[1]} vertical={pt.shown[0] === pt.shown[1]} size={0.7} />
+              <span key={lineKeys[i]} className={`domino-placed ${fresh.has(lineKeys[i]) ? 'enter' : ''}`} style={fromSeat(places.find((p) => p.id === pt.by))}>
+                <DominoTile a={pt.shown[0]} b={pt.shown[1]} vertical={pt.shown[0] === pt.shown[1]} size={0.7} />
+              </span>
             ))}
           </div>
         )}
@@ -154,7 +170,7 @@ export default function DominoBoard({ game, room, you, act }: BoardProps) {
           </div>
         )}
         {v.lastAction && <div className="domino-last">{v.lastAction.text}</div>}
-      </div>
+      </GameTableLayout>
 
       {selected && (
         <div className="card row" style={{ justifyContent: 'center' }}>

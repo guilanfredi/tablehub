@@ -2,6 +2,7 @@ import { Rng } from '../rng';
 import { defaultOptions } from '../options';
 import { runAction } from '../runner';
 import { isActionError, type GameDefinition, type GameOptions, type PlayerSeat } from '../types';
+import { LOG_LIMIT, type GameLog } from '../log';
 
 export interface ConformanceConfig {
   /** Quantidades de jogadores a testar (padrão: min e max). */
@@ -20,6 +21,8 @@ export interface ConformanceConfig {
   leakCheck?: (state: any, viewerId: string, view: any) => string | null;
   /** Escolhe a ação entre as legais (padrão: aleatória). Útil para guiar partidas longas. */
   chooseAction?: (legal: any[], rng: Rng, state: any, playerId: string) => any;
+  /** Verifica se o histórico (público, igual para todos) revela informação oculta. Erro ou null. */
+  logLeakCheck?: (state: any, log: GameLog) => string | null;
 }
 
 export interface ConformanceReport {
@@ -50,6 +53,7 @@ export function randomPlayout(
   const history: { playerId: string; action: unknown }[] = [];
   const maxSteps = cfg.maxSteps ?? 2000;
   const ctx = `[${def.id} n=${playerCount} seed=${seed} opts=${JSON.stringify(options)}]`;
+  let logTotal = 0;
 
   for (let step = 0; step < maxSteps; step++) {
     const status = def.getStatus(state);
@@ -67,6 +71,11 @@ export function randomPlayout(
     assert(!isActionError(result), `${ctx} passo ${step}: ação legal rejeitada ${JSON.stringify(action)} -> ${(result as any).error}`);
     state = result;
     history.push({ playerId: p, action });
+    if (def.getLog) {
+      const total = def.getLog(state).total;
+      assert(total >= logTotal, `${ctx} passo ${step}: total do histórico diminuiu`);
+      logTotal = total;
+    }
 
     if (step % 25 === 0) checkState(def, state, players, ctx, cfg);
   }
@@ -83,6 +92,22 @@ function checkState(def: GameDefinition, state: any, players: PlayerSeat[], ctx:
       const leak = cfg.leakCheck(state, pl, view);
       assert(!leak, `${ctx}: vazamento de informação para ${pl}: ${leak}`);
     }
+  }
+  if (def.getLog) checkLog(def.getLog(state), state, players, ctx, cfg);
+}
+
+function checkLog(log: GameLog, state: any, players: PlayerSeat[], ctx: string, cfg: ConformanceConfig) {
+  assert(log && Array.isArray(log.entries) && Number.isInteger(log.total), `${ctx}: getLog fora do formato { total, entries }`);
+  assert(log.entries.length <= LOG_LIMIT, `${ctx}: histórico com mais de ${LOG_LIMIT} entradas`);
+  assert(log.total >= log.entries.length, `${ctx}: total do histórico menor que as entradas`);
+  const ids = new Set(players.map((p) => p.id));
+  for (const e of log.entries) {
+    assert(typeof e.text === 'string' && e.text.length > 0, `${ctx}: entrada do histórico sem texto`);
+    assert(e.by === undefined || ids.has(e.by), `${ctx}: entrada do histórico com autor desconhecido ${e.by}`);
+  }
+  if (cfg.logLeakCheck) {
+    const leak = cfg.logLeakCheck(state, log);
+    assert(!leak, `${ctx}: histórico revela informação oculta: ${leak}`);
   }
 }
 

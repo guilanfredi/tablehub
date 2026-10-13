@@ -128,10 +128,16 @@ export interface GameStatusView {
   message?: string;
 }
 
+/** Histórico público da partida (últimas entradas; `total` conta todas, para o contador de não lidas). */
+export interface GameLogView {
+  total: number;
+  entries: { text: string; by?: string }[];
+}
+
 /** Mensagens do servidor para o cliente. */
 export type ServerMessage =
   | { t: 'room'; room: RoomView; you: string }
-  | { t: 'game'; gameId: string; seq: number; view: unknown; status: GameStatusView; legal: unknown[] }
+  | { t: 'game'; gameId: string; seq: number; view: unknown; status: GameStatusView; legal: unknown[]; log?: GameLogView }
   | { t: 'gameEnded' }
   | { t: 'error'; message: string; fatal?: boolean }
   | { t: 'kicked' }

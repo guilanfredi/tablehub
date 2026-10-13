@@ -141,7 +141,8 @@ a { color: var(--info); }
 /* Brand */
 .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 600; font-size: 22px; color: var(--ink); text-decoration: none; }
 
-@media (prefers-reduced-motion: reduce) { .btn, .switch input, .switch input::after { transition: none; } }
+/* Movimento reduzido: nenhuma animação nem transição no app inteiro (o estado final aparece direto). */
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 
 /* ---------- Posicionamento no app ---------- */
 .toast { position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 50; cursor: pointer; }
