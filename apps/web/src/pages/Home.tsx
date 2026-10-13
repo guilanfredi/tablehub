@@ -34,15 +34,15 @@ export function Home() {
     e.preventDefault();
     if (!nameOk) return setError('Escolha um apelido primeiro.');
     const c = normalizeRoomCode(code);
-    if (!isValidRoomCode(c)) return setError('Código de sala inválido (5 letras/números).');
+    if (!isValidRoomCode(c)) return setError('Código de mesa inválido (5 letras/números).');
     setError(null);
     setBusy('join');
     try {
       setName(name);
-      if (!(await roomExists(c))) return setError('Sala não encontrada.');
+      if (!(await roomExists(c))) return setError('Mesa não encontrada. Confira o código.');
       nav(`/sala/${c}${profileQuery()}`);
     } catch {
-      setError('Não foi possível verificar a sala.');
+      setError('Não foi possível verificar a mesa.');
     } finally {
       setBusy(null);
     }
@@ -52,7 +52,7 @@ export function Home() {
     <main>
       <section className="hero">
         <h1>Jogue com os amigos, onde estiverem</h1>
-        <p className="muted">Crie uma sala, compartilhe o código e escolha o jogo.</p>
+        <p className="muted">Abra uma mesa, compartilhe o código e escolha o jogo.</p>
         <div className="games-strip">
           {GAME_LIST.map((g) => (
             <span key={g.id} className="badge">
@@ -74,13 +74,13 @@ export function Home() {
             inputId="name"
           />
           <button className="btn btn-primary btn-block" onClick={onCreate} disabled={busy !== null}>
-            {busy === 'create' ? 'Criando…' : 'Criar sala'}
+            {busy === 'create' ? 'Abrindo…' : 'Abrir uma mesa'}
           </button>
         </div>
 
         <form className="card stack" onSubmit={onJoin}>
           <label className="label" htmlFor="code">
-            Entrar em uma sala
+            Entrar em uma mesa
           </label>
           <div className="row">
             <input

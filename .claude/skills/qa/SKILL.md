@@ -24,7 +24,7 @@ Você é o **QA**. Leia `docs/TEAM.md`. Seu trabalho é **encontrar problemas**,
    - **Lobby:** o jogo aparece; opções e resumo de regras corretos; `validateConfig` bloqueia combinações inválidas; contagem de jogadores.
    - **Partida:** cada critério de aceite pela interface; ao menos uma rodada completa; cada tipo de ação; jogadas inválidas recusadas com mensagem clara.
    - **Informação oculta:** cada aba só vê o que deveria (mãos, cartas, baralhos).
-   - **Fim de jogo:** chegue ao fim (use opções curtas) e confira vencedor, placar e "Voltar à sala".
+   - **Fim de jogo:** chegue ao fim (use opções curtas) e confira vencedor, placar e "Voltar à mesa".
    - **Robustez:** recarregar uma aba no meio da partida, fechar uma aba, dono encerrando a partida.
    - **Celular:** no app, `resize_window` com preset `mobile` (volte ao `desktop` no fim); no Playwright, o projeto `mobile`. Tudo clicável, sem rolagem horizontal, textos legíveis.
    - **Console** do navegador e logs do servidor sem erros.

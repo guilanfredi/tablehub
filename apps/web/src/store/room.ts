@@ -92,7 +92,7 @@ export const useRoom = create<RoomStore>((set, get) => {
           break;
         case 'kicked':
           wanted = null;
-          set({ fatal: 'Você foi removido da sala pelo dono.', conn: 'closed' });
+          set({ fatal: 'Você foi removido da mesa pelo dono.', conn: 'closed' });
           break;
       }
     };

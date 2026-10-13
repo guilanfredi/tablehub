@@ -2,7 +2,7 @@ import type { CreateRoomResponse } from '@tablehub/shared';
 
 export async function createRoom(): Promise<string> {
   const r = await fetch('/api/rooms', { method: 'POST' });
-  if (!r.ok) throw new Error('Não foi possível criar a sala.');
+  if (!r.ok) throw new Error('Não foi possível abrir a mesa.');
   return ((await r.json()) as CreateRoomResponse).code;
 }
 

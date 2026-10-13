@@ -63,12 +63,12 @@ export class RoomDurableObject extends DurableObject<Env> {
     const [client, server] = [pair[0], pair[1]];
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment({ playerId: null } satisfies Attachment);
-    if (!this.room) this.fatal(server, 'Sala não encontrada.', 4404);
+    if (!this.room) this.fatal(server, 'Mesa não encontrada. Confira o código.', 4404);
     return new Response(null, { status: 101, webSocket: client });
   }
 
   override async webSocketMessage(ws: WebSocket, raw: string | ArrayBuffer): Promise<void> {
-    if (!this.room) return this.fatal(ws, 'Sala não encontrada.', 4404);
+    if (!this.room) return this.fatal(ws, 'Mesa não encontrada. Confira o código.', 4404);
     const text = typeof raw === 'string' ? raw : new TextDecoder().decode(raw);
     if (text.length > MAX_MESSAGE_BYTES) return this.sendTo(ws, { t: 'error', message: 'Mensagem grande demais.' });
 
@@ -173,7 +173,7 @@ export class RoomDurableObject extends DurableObject<Env> {
     if (!this.room) return;
     const r = svc.tick(this.room, Date.now());
     if (r.expired) {
-      for (const ws of this.ctx.getWebSockets()) this.fatal(ws, 'Sala expirada.', 4410);
+      for (const ws of this.ctx.getWebSockets()) this.fatal(ws, 'Mesa expirada.', 4410);
       this.room = null;
       await this.ctx.storage.deleteAll();
       return;
