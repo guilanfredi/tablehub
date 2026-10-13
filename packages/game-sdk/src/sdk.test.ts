@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildHexGraph, coastalEdges, hexagonShape, spiralOrder } from './hexgrid';
 import { normalizeOptions } from './options';
 import { Rng } from './rng';
+import { emptyLog, LOG_LIMIT, pushLog, toGameLog } from './log';
 
 describe('Rng', () => {
   it('é determinístico pela semente', () => {
@@ -66,5 +67,22 @@ describe('normalizeOptions', () => {
     ];
     expect(normalizeOptions(schema, { n: 50, s: 'z', b: 'yes', extra: 1 })).toEqual({ n: 10, s: 'a', b: false });
     expect(normalizeOptions(schema, { s: 'b', b: true })).toEqual({ n: 5, s: 'b', b: true });
+  });
+});
+
+describe('GameLog', () => {
+  it('pushLog guarda as últimas 60 e conta o total', () => {
+    let log = emptyLog();
+    for (let i = 0; i < 70; i++) log = pushLog(log, `linha ${i}`, i % 2 ? 'p1' : undefined);
+    expect(log.total).toBe(70);
+    expect(log.entries.length).toBe(LOG_LIMIT);
+    expect(log.entries[0]).toEqual({ text: 'linha 10' });
+    expect(log.entries.at(-1)).toEqual({ text: 'linha 69', by: 'p1' });
+  });
+
+  it('tolera o formato antigo (string[])', () => {
+    expect(toGameLog(['a', 'b'])).toEqual({ total: 2, entries: [{ text: 'a' }, { text: 'b' }] });
+    expect(pushLog(['a'], 'b', 'p2')).toEqual({ total: 2, entries: [{ text: 'a' }, { text: 'b', by: 'p2' }] });
+    expect(toGameLog(undefined)).toEqual({ total: 0, entries: [] });
   });
 });

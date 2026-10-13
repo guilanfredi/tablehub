@@ -1,4 +1,4 @@
-import { Rng, type GameDefinition, type GameStatus } from '@tablehub/game-sdk';
+import { Rng, emptyLog, pushLog, toGameLog, type GameDefinition, type GameLog, type GameStatus } from '@tablehub/game-sdk';
 
 export const RANKS = ['4', '5', '6', '7', 'Q', 'J', 'K', 'A', '2', '3'] as const;
 /** Ordem de força dos naipes para as manilhas (do mais fraco ao zap). */
@@ -76,7 +76,8 @@ export interface TrucoState {
   scores: [number, number];
   hand: HandState;
   lastHand: HandSummary | null;
-  log: string[];
+  /** Formato antigo (`string[]`) em partidas anteriores ao histórico comum. */
+  log: GameLog | string[];
   winnerTeam: number | null;
 }
 
@@ -158,7 +159,7 @@ function setup(players: { id: string; name: string }[], options: TrucoOptions, s
     scores: [0, 0],
     hand: null as unknown as HandState,
     lastHand: null,
-    log: [],
+    log: emptyLog(),
     winnerTeam: null,
   } as TrucoState;
   newHand(s, rng, 1);
@@ -166,9 +167,8 @@ function setup(players: { id: string; name: string }[], options: TrucoOptions, s
   return s;
 }
 
-function log(s: TrucoState, msg: string) {
-  s.log.push(msg);
-  if (s.log.length > 30) s.log.splice(0, s.log.length - 30);
+function log(s: TrucoState, msg: string, by?: string) {
+  s.log = pushLog(s.log, msg, by);
 }
 
 function finishHand(s: TrucoState, winnerTeam: number | null, points: number, reason: HandSummary['reason'], text: string) {
@@ -213,7 +213,7 @@ function resolveTrick(s: TrucoState): void {
   const winnerPlayer = winnerTeam === null ? null : top[0].playerId;
   h.tricks.push({ plays, winnerTeam, winnerPlayer });
   h.current = [];
-  log(s, winnerTeam === null ? `Vaza ${h.tricks.length}: empate (cangou)` : `Vaza ${h.tricks.length}: ${s.players[idxOf(s, winnerPlayer!)].name}`);
+  log(s, winnerTeam === null ? `Vaza ${h.tricks.length}: empate (cangou)` : `Vaza ${h.tricks.length}: ${s.players[idxOf(s, winnerPlayer!)].name}`, winnerPlayer ?? undefined);
 
   const result = handWinner(h.tricks.map((t) => t.winnerTeam));
   if (result !== undefined) {
@@ -268,7 +268,7 @@ function applyAction(s: TrucoState, pid: string, a: TrucoAction): TrucoState | {
       h.value = p.to;
       h.lastRaiserTeam = p.team;
       h.pending = null;
-      log(s, `${name} aceitou (${BET_NAMES[p.to]}).`);
+      log(s, `${name} aceitou (${BET_NAMES[p.to]}).`, pid);
       return s;
     }
     if (a.type === 'run') {
@@ -280,7 +280,7 @@ function applyAction(s: TrucoState, pid: string, a: TrucoAction): TrucoState | {
       h.value = p.to; // aumentar implica aceitar o pedido anterior
       h.lastRaiserTeam = p.team;
       h.pending = { by: pid, team, to: nextLevel(p.to) };
-      log(s, `${name} pediu ${BET_NAMES[h.pending.to]}!`);
+      log(s, `${name} pediu ${BET_NAMES[h.pending.to]}!`, pid);
       return s;
     }
     return { error: 'Responda ao pedido: aceitar, correr ou aumentar.' };
@@ -291,7 +291,7 @@ function applyAction(s: TrucoState, pid: string, a: TrucoAction): TrucoState | {
   if (a.type === 'truco') {
     if (!canRequestTruco(s, team)) return { error: 'Você não pode pedir aumento agora.' };
     h.pending = { by: pid, team, to: nextLevel(h.value) };
-    log(s, `${name} pediu ${BET_NAMES[h.pending.to]}!`);
+    log(s, `${name} pediu ${BET_NAMES[h.pending.to]}!`, pid);
     return s;
   }
 
@@ -302,7 +302,7 @@ function applyAction(s: TrucoState, pid: string, a: TrucoAction): TrucoState | {
     if (faceDown && (h.tricks.length === 0 || h.special === 'maoDeFerro')) return { error: 'Só é possível jogar encoberta a partir da segunda vaza.' };
     const [card] = hand.splice(a.index, 1);
     h.current.push({ playerId: pid, card, faceDown });
-    log(s, `${name} jogou ${faceDown ? 'uma carta encoberta' : cardLabel(card)}`);
+    log(s, `${name} jogou ${faceDown ? 'uma carta encoberta' : cardLabel(card)}`, pid);
     if (h.current.length === s.players.length) resolveTrick(s);
     else h.turn = (h.turn + 1) % s.players.length;
     return s;
@@ -351,7 +351,6 @@ export interface TrucoView {
   dealer: string;
   handNumber: number;
   lastHand: HandSummary | null;
-  log: string[];
   winnerTeam: number | null;
   pointsToWin: number;
 }
@@ -391,7 +390,6 @@ function getPlayerView(s: TrucoState, pid: string | null): TrucoView {
     dealer: s.players[s.dealer].id,
     handNumber: h.number,
     lastHand: s.lastHand,
-    log: s.log,
     winnerTeam: s.winnerTeam,
     pointsToWin: s.options.pointsToWin,
   };
@@ -462,4 +460,5 @@ export const trucoPaulista: GameDefinition<TrucoState, TrucoAction, TrucoOptions
   getLegalActions: legalActions,
   applyAction,
   getStatus,
+  getLog: (s) => toGameLog(s.log),
 };

@@ -67,7 +67,7 @@ describe('King of Tokyo — preparação (critério 1)', () => {
     const a = def.setup({ players: makePlayers(4), options: { powerCards: true }, seed: 99 });
     const b = def.setup({ players: makePlayers(4), options: { powerCards: true }, seed: 99 });
     expect(a.turn).toBe(b.turn);
-    expect(a.log[0]).toMatch(/Sorteio do 1º jogador/);
+    expect(def.getLog!(a).entries[0].text).toMatch(/Sorteio do 1º jogador/);
     const firsts = new Set(Array.from({ length: 30 }, (_, i) => def.setup({ players: makePlayers(4), options: { powerCards: true }, seed: i }).turn));
     expect(firsts.size).toBeGreaterThan(1);
   });
@@ -612,7 +612,7 @@ describe('cartas Constantes', () => {
     M(s, 'p2').place = 'city';
     give(s, 'p2', 'camuflagem');
     s = resolveWith(s, ['claw', 'claw', 'claw', 'claw', 'claw', 'claw']);
-    const line = s.log.find((l) => l.startsWith('Camuflagem'))!;
+    const line = def.getLog!(s).entries.find((l) => l.text.startsWith('Camuflagem'))!.text;
     const saved = Number(line.match(/anulou (\d+)/)![1]);
     expect(M(s, 'p2').hp).toBe(10 - 6 + saved);
   });
