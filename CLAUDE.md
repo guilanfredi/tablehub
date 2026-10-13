@@ -20,6 +20,8 @@ npm test            # vitest: motores, conformidade, room-core
 npm run typecheck
 npm run build       # build do PWA em apps/web/dist
 node scripts/smoke.mjs http://localhost:8787   # teste ponta a ponta contra um servidor rodando
+node scripts/check-design-system.mjs   # cores só por token (roda no CI)
+node scripts/gen-tokens.mjs           # regenera tokens.css a partir do tokens.json
 npm run new-game -- <id> "<Nome>"
 npm run e2e         # Playwright (desktop + mobile); BASE_URL=<url> para outro ambiente
 ```
@@ -36,3 +38,11 @@ Para testar vários jogadores no mesmo navegador, use `?perfil=2`, `?perfil=3`�
 - Textos de interface e mensagens de erro em português.
 - Aleatoriedade só via `Rng` com semente no estado; servidor autoritativo.
 - Arte própria (SVG); nunca usar assets protegidos de jogos comerciais.
+
+## Design system (obrigatório em toda mudança de interface)
+- O visual do app é o design system Taverna, em `docs/design-system/` (fonte da verdade). Antes de criar ou alterar UI, use a skill `design-system` e leia `docs/design-system/README.md`.
+- Cores, espaços, cantos e sombras só por variável de `apps/web/src/design-system/tokens.css`. Nada de hex/rgb/hsl em `apps/web/src` fora de `design-system/` e da arte (`games/*/art.tsx`, `components/avatars/art.ts`).
+- Reutilize as classes de `apps/web/src/design-system/components.css`; componente novo ganha guia em `docs/design-system/components/` no mesmo PR.
+- Texto de UI usa "mesa" (não "sala"): Abrir uma mesa, Sentar, Código da mesa.
+- `node scripts/check-design-system.mjs` precisa passar antes do PR (roda no CI).
+- Mudar um valor visual = editar `docs/design-system/tokens.json`, regenerar `tokens.css` e atualizar o README no mesmo PR.

@@ -25,7 +25,7 @@ export function GameTable() {
           {finished ? 'Fim de jogo' : myTurn && /^Vez de /.test(game.status.message ?? '') ? 'Sua vez!' : (game.status.message ?? '')}
         </div>
         {isOwner && !finished && (
-          <button className="btn btn-sm btn-danger" onClick={() => confirm('Encerrar a partida para todos e voltar à sala?') && send({ t: 'backToLobby' })}>
+          <button className="btn btn-sm btn-danger" onClick={() => confirm('Encerrar a partida para todos e voltar à mesa?') && send({ t: 'backToLobby' })}>
             Encerrar
           </button>
         )}
@@ -36,7 +36,7 @@ export function GameTable() {
           <h2>{game.status.winners?.includes(you) ? 'Você venceu! 🎉' : 'Fim de jogo'}</h2>
           <p style={{ margin: 0 }}>{game.status.message ?? (winners.length ? `Vencedor: ${winners.join(', ')}` : '')}</p>
           <button className="btn btn-primary" onClick={() => send({ t: 'backToLobby' })}>
-            Voltar à sala
+            Voltar à mesa
           </button>
         </div>
       )}

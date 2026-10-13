@@ -15,7 +15,7 @@ export function MonsterPortrait({ monster, size = 44, dead }: { monster: string;
   const shape = Object.keys(MONSTER_COLORS).indexOf(monster);
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" role="img" aria-label={monster} className="kot-portrait">
-      <circle cx="24" cy="24" r="23" fill="var(--surface-2)" stroke={c} strokeWidth="2" />
+      <circle cx="24" cy="24" r="23" fill="var(--surface-raised)" stroke={c} strokeWidth="2" />
       {shape === 0 && <path d="M24 6 L27 14 L21 14 Z M14 10 L19 16 L13 17 Z M34 10 L35 17 L29 16 Z" fill={c} />}
       {shape === 1 && <path d="M12 18 L15 6 L21 15 Z M36 18 L33 6 L27 15 Z" fill={c} />}
       {shape === 2 && <path d="M16 13 L20 6 L22 13 M24 12 L28 5 L30 12 M31 14 L36 8 L36 16" fill={c} stroke={c} strokeWidth="2" />}

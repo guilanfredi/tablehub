@@ -11,14 +11,14 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'tablehub-mark.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'TableHub — jogos de mesa online',
         short_name: 'TableHub',
-        description: 'Crie uma sala e jogue dominó, truco e Catan com os amigos.',
+        description: 'Abra uma mesa e jogue dominó, truco e Catan com os amigos.',
         lang: 'pt-BR',
-        theme_color: '#1f6f54',
-        background_color: '#f6f3ec',
+        theme_color: '#1A1614',
+        background_color: '#1A1614',
         display: 'standalone',
         orientation: 'any',
         start_url: '/',
@@ -30,6 +30,8 @@ export default defineConfig({
       },
       workbox: {
         // o jogo depende do servidor; cacheia só o "shell" do app
+        // fontes (@fontsource) entram no cache para funcionar offline
+        globPatterns: ['**/*.{js,css,html,woff2}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//, /^\/ws\//],
         // clique na notificação de vez (lib/turnAlert.ts)

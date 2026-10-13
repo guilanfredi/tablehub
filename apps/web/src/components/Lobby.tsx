@@ -6,6 +6,7 @@ import { setAvatar } from '../lib/session';
 import { useRoom } from '../store/room';
 import { Avatar, AvatarPicker } from './avatars/Avatar';
 import { OptionsForm } from './OptionsForm';
+import './lobby.css';
 
 /** "2–4 jogadores" ou "2 ou 4 jogadores", conforme as quantidades que o jogo aceita. */
 function playerCountLabel(def: GameDefinition): string {
@@ -94,7 +95,7 @@ export function Lobby() {
                     <span className="badge">Aguardando</span>
                   )}
                   {isOwner && room.players.length > 1 && (
-                    <span className="row" style={{ gap: 2, flexWrap: 'nowrap' }}>
+                    <span className="row player-controls" style={{ gap: 2, flexWrap: 'nowrap' }}>
                       <button className="btn btn-ghost btn-sm" aria-label="Subir" disabled={i === 0} onClick={() => send({ t: 'movePlayer', playerId: p.id, toIndex: i - 1 })}>
                         ↑
                       </button>
@@ -107,7 +108,7 @@ export function Lobby() {
                         ↓
                       </button>
                       {p.id !== you && (
-                        <button className="btn btn-ghost btn-sm" aria-label={`Remover ${p.name}`} onClick={() => confirm(`Remover ${p.name} da sala?`) && send({ t: 'kick', playerId: p.id })}>
+                        <button className="btn btn-ghost btn-sm" aria-label={`Remover ${p.name}`} onClick={() => confirm(`Remover ${p.name} da mesa?`) && send({ t: 'kick', playerId: p.id })}>
                           ✕
                         </button>
                       )}
@@ -154,7 +155,7 @@ export function Lobby() {
               <strong>{def.name}</strong>
             </div>
           ) : (
-            <p className="muted" style={{ margin: 0 }}>O dono da sala ainda não escolheu o jogo.</p>
+            <p className="muted" style={{ margin: 0 }}>O dono da mesa ainda não escolheu o jogo.</p>
           )}
           {def && <p className="muted small" style={{ margin: 0 }}>{def.description}</p>}
         </div>
@@ -212,7 +213,7 @@ function RoomCodeCard({ code }: { code: string }) {
 
   async function share() {
     try {
-      if (navigator.share) await navigator.share({ title: 'TableHub', text: `Entre na minha sala: ${code}`, url });
+      if (navigator.share) await navigator.share({ title: 'TableHub', text: `Entre na minha mesa: ${code}`, url });
       else {
         await navigator.clipboard.writeText(url);
         setCopied(true);
@@ -225,7 +226,7 @@ function RoomCodeCard({ code }: { code: string }) {
   return (
     <div className="card row">
       <div className="grow">
-        <div className="muted small">Código da sala</div>
+        <div className="muted small">Código da mesa</div>
         <div className="room-code">{code}</div>
       </div>
       <button className="btn" onClick={share}>

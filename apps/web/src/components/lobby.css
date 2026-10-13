@@ -1,0 +1,20 @@
+/* Linha do jogador: na coluna estreita do lobby (e no celular) selo e controles quebram para a linha de baixo em vez de espremer o nome. */
+.player-item {
+  flex-wrap: wrap;
+  row-gap: var(--space-1);
+}
+
+.player-item .name {
+  flex: 1 1 5em;
+}
+
+.player-item .player-controls {
+  margin-left: auto;
+}
+
+@media (max-width: 600px) {
+  .player-item {
+    gap: 6px;
+    padding: var(--space-2);
+  }
+}

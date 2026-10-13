@@ -36,7 +36,7 @@ export function RoomPage() {
     <>
       {conn === 'reconnecting' && <div className="conn-banner">Reconectando…</div>}
       {!room ? (
-        <p className="muted">Conectando à sala {code}…</p>
+        <p className="muted">Conectando à mesa {code}…</p>
       ) : room.status === 'lobby' ? (
         <Lobby />
       ) : (
@@ -56,7 +56,7 @@ function AskName({ onDone, code }: { onDone: () => void; code: string }) {
   }
   return (
     <form className="card stack" style={{ maxWidth: 460, margin: '0 auto' }} onSubmit={submit}>
-      <h2>Entrar na sala {code}</h2>
+      <h2>Entrar na mesa {code}</h2>
       <ProfileEditor name={name} onName={setNameState} inputId="ask-name" autoFocus />
       <button className="btn btn-primary" type="submit" disabled={!name.trim()}>
         Entrar

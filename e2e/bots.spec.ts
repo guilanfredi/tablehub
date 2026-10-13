@@ -113,7 +113,7 @@ test('bots: Dominó até o fim (1 humano + 1 bot) e voltar à sala com o bot ain
   await ana.getByLabel('Pontos para vencer').selectOption('50'); // partida mais curta
   await ana.getByRole('button', { name: 'Adicionar bot' }).click();
   await startGame(ana);
-  const back = ana.getByRole('button', { name: 'Voltar à sala' });
+  const back = ana.getByRole('button', { name: 'Voltar à mesa' });
   for (let i = 0; i < 3000 && !(await back.isVisible().catch(() => false)); i++) {
     if (!(await ana.locator('.status-pill.my-turn').isVisible().catch(() => false))) {
       await ana.waitForTimeout(300);

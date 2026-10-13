@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TableHub · componentes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="../../apps/web/src/design-system/tokens.css">
+<link rel="stylesheet" href="../../apps/web/src/design-system/components.css">
+<style>
+main { max-width: 1000px; margin: 0 auto; padding: var(--space-6) var(--space-4); display: grid; gap: var(--space-6); }
+.th-root { padding: var(--space-4); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.g-title { font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); font-family: var(--font-body); font-weight: 800; }
+.toast { position: static; transform: none; } .conn-banner { position: static; }
+</style></head><body><main>
+<header class="brand"><img src="logos/tablehub-mark.svg" alt="" width="40" height="40"> TableHub · componentes</header>
+<section><h2 class="g-title">Badge</h2><div class="th-root row">
+  <span class="badge badge-ok">Pronto</span><span class="badge">Aguardando</span><span class="badge badge-primary">Dono</span><span class="badge">Bot</span><span class="badge badge-warn">Regras mudaram</span><span class="badge">Catan</span>
+</div>
+</section>
+<section><h2 class="g-title">Banner</h2><div class="th-root stack">
+  <div class="banner" role="alert">Mesa não encontrada. Confira o código.</div>
+  <div class="banner banner-info">As regras mudaram. Confira e marque Pronto de novo.</div>
+  <div class="conn-banner">Sem conexão. Tentando reconectar…</div>
+</div>
+</section>
+<section><h2 class="g-title">Button</h2><div class="th-root stack">
+  <div class="row"><button class="btn btn-primary">Abrir uma mesa</button><button class="btn">Entrar</button><button class="btn btn-ghost">Regras</button><button class="btn btn-danger">Encerrar</button></div>
+  <div class="row"><button class="btn btn-primary btn-sm">Pronto</button><button class="btn btn-sm">Copiar código</button><button class="btn btn-ghost btn-sm" aria-label="Subir">↑</button><button class="btn btn-primary" disabled>Criando…</button></div>
+</div>
+</section>
+<section><h2 class="g-title">Card</h2><div class="th-root row" style="align-items:stretch">
+  <div class="card stack grow"><h3>Abrir uma mesa</h3><p class="muted" style="margin:0">Escolha o jogo depois, com todo mundo sentado.</p><button class="btn btn-primary btn-block">Abrir uma mesa</button></div>
+  <div class="card result-card stack grow"><h2>Você venceu!</h2><p style="margin:0">Bia ficou em segundo com 8 pontos.</p><button class="btn btn-primary">Voltar à mesa</button></div>
+</div>
+</section>
+<section><h2 class="g-title">Field</h2><div class="th-root stack" style="max-width:420px">
+  <div><label class="label" for="n">Seu apelido</label><input class="input" id="n" placeholder="Como os outros vão te chamar"></div>
+  <div><label class="label" for="c">Entrar em uma mesa</label><div class="row"><input class="input code-input grow" id="c" value="K7QPZ" maxlength="5"><button class="btn">Entrar</button></div></div>
+  <div><label class="label" for="s">Pontos para vencer</label><select class="select" id="s"><option>10 pontos</option><option>12 pontos</option></select></div>
+</div>
+</section>
+<section><h2 class="g-title">GamePicker</h2><div class="th-root"><div class="game-picker" role="group" aria-label="Escolha o jogo">
+  <button class="game-option" aria-pressed="true"><strong>Catan</strong><span>3–4 jogadores</span></button>
+  <button class="game-option" aria-pressed="false"><strong>Truco Paulista</strong><span>2 ou 4 jogadores</span></button>
+  <button class="game-option" aria-pressed="false"><strong>Dominó</strong><span>2–4 jogadores</span></button>
+  <button class="game-option" aria-pressed="false"><strong>King of Tokyo</strong><span>2–6 jogadores</span></button>
+</div></div>
+</section>
+<section><h2 class="g-title">Log</h2><div class="th-root"><div class="card"><div class="log">
+  <div><b>Você</b> rolou 8 e recebeu 2 trigos.</div>
+  <div><b>Rita</b> trocou 4 ovelhas por 1 minério.</div>
+  <div><b>Bia</b> construiu uma estrada.</div>
+  <div><b>Truqueiro</b> passou a vez.</div>
+</div></div></div>
+</section>
+<section><h2 class="g-title">PlayerList</h2><div class="th-root" style="max-width:440px"><ul class="player-list">
+  <li class="player-item"><span class="seat">1</span><span class="dot dot-on"></span><span class="name">Bia</span><span class="badge badge-primary">Dono</span><span class="badge badge-ok">Pronto</span></li>
+  <li class="player-item"><span class="seat seat-2">2</span><span class="dot dot-on"></span><span class="name">Rita Albuquerque Mendes</span><span class="badge badge-warn">Regras mudaram</span></li>
+  <li class="player-item"><span class="seat seat-3">3</span><span class="dot"></span><span class="name">Truqueiro</span><span class="badge">Bot</span><button class="btn btn-ghost btn-sm" aria-label="Remover">✕</button></li>
+  <li class="player-item"><span class="seat seat-empty">4</span><span class="name muted">Lugar livre</span></li>
+</ul></div>
+</section>
+<section><h2 class="g-title">Scoreboard</h2><div class="th-root"><div class="scoreboard">
+  <span class="score-chip active"><span class="seat">1</span>Bia · 8</span>
+  <span class="score-chip"><span class="seat seat-2">2</span>Rita · 6</span>
+  <span class="score-chip"><span class="seat seat-3">3</span>Truqueiro · 5</span>
+  <span class="score-chip"><span class="seat seat-4">4</span>Você · 9</span>
+</div></div>
+</section>
+<section><h2 class="g-title">StatusPill</h2><div class="th-root stack">
+  <div class="table-header"><strong>Catan</strong><div class="status-pill my-turn" aria-live="polite">Sua vez!</div><button class="btn btn-sm btn-danger">Encerrar</button></div>
+  <div class="table-header"><strong>Truco Paulista</strong><div class="status-pill">Vez de Bia: escolher carta</div></div>
+</div>
+</section>
+<section><h2 class="g-title">Switch</h2><div class="th-root stack">
+  <label class="switch"><input type="checkbox" checked> Mão de 11 às cegas</label>
+  <label class="switch"><input type="checkbox"> Jogar com bots nos lugares livres</label>
+</div>
+</section>
+<section><h2 class="g-title">TableCode</h2><div class="th-root"><div class="card stack" style="max-width:340px"><span class="muted" style="font-size:14px">Código da mesa</span><div class="room-code">K7QPZ</div><div class="row"><button class="btn btn-sm">Copiar código</button><button class="btn btn-sm btn-ghost">Compartilhar</button></div></div></div>
+</section>
+<section><h2 class="g-title">TableTop</h2><div class="th-root"><div class="table-top" style="height:190px;position:relative;display:grid;place-items:center">
+  <svg width="220" height="120" viewBox="0 0 220 120" aria-hidden="true"><g style="fill:none;stroke:var(--line-strong);stroke-width:2"><polygon points="60,10 90,27 90,61 60,78 30,61 30,27"/><polygon points="120,10 150,27 150,61 120,78 90,61 90,27"/><polygon points="90,61 120,78 120,112 90,129 60,112 60,78"/><polygon points="150,61 180,78 180,112 150,129 120,112 120,78"/></g></svg>
+  <span class="muted" style="position:absolute;left:14px;bottom:10px;font-size:13px">Tabuleiro do jogo</span>
+  <div style="position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;gap:4px"><button class="btn btn-sm" style="box-shadow:var(--shadow-float);width:36px;padding:0">+</button><button class="btn btn-sm" style="box-shadow:var(--shadow-float);width:36px;padding:0">−</button></div>
+</div></div>
+</section>
+<section><h2 class="g-title">Toast</h2><div class="th-root row"><span class="toast">Código copiado.</span><span class="toast">Rita entrou na mesa.</span></div>
+</section>
+</main></body></html>

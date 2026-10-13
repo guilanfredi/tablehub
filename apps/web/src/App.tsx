@@ -67,7 +67,7 @@ export function App() {
     <div className="app">
       <header className="topbar">
         <Link to="/" className="brand">
-          <img src="/favicon.svg" alt="" />
+          <img src="/tablehub-mark.svg" alt="" />
           TableHub
         </Link>
         <span className="row" style={{ gap: 2, flexWrap: 'nowrap' }}>

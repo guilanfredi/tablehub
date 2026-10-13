@@ -55,6 +55,7 @@ Regras de ouro:
 - Mobile-first: teste em 375×812. Tabuleiros grandes usam `components/board/PanZoom`.
 - Utilitários prontos: `game-sdk/hexgrid` (tabuleiros hexagonais), `PlayingCard` (truco), `DominoTile`.
 - Arte própria (SVG). Nunca use arte, logotipos ou textos protegidos dos jogos comerciais.
+- Segue o design system (`docs/design-system/`): cores da arte do jogo em `games/<id>/art.tsx`, o resto por token de `tokens.css`; `node scripts/check-design-system.mjs` roda no CI.
 
 ## Bots (opcional)
 

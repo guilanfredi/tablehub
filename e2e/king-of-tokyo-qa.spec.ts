@@ -84,7 +84,7 @@ test('king of tokyo QA: lobby, partida completa sem cartas, fim de jogo', async 
   for (const p of [ana, beto]) await expect(p.locator('.result-card')).toBeVisible();
   const won = (await ana.getByText('Você venceu! 🎉').count()) + (await beto.getByText('Você venceu! 🎉').count());
   expect(won).toBe(1);
-  await ana.getByRole('button', { name: 'Voltar à sala' }).click();
+  await ana.getByRole('button', { name: 'Voltar à mesa' }).click();
   await expect(ana.getByRole('heading', { name: 'Regras desta partida' })).toBeVisible();
   expect(errors).toEqual([]);
 });

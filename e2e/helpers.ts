@@ -14,7 +14,7 @@ export async function newPlayer(browser: Browser, name: string, contextOptions: 
 /** Cria uma sala pela tela inicial e devolve o código. */
 export async function createRoom(page: Page): Promise<string> {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Criar sala' }).click();
+  await page.getByRole('button', { name: 'Abrir uma mesa' }).click();
   await page.waitForURL(/\/sala\/[A-Z0-9]{5}/);
   const code = page.url().match(/\/sala\/([A-Z0-9]{5})/)![1];
   await expect(page.getByText(code, { exact: false }).first()).toBeVisible();

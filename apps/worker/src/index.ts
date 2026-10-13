@@ -28,7 +28,7 @@ export default {
         const code = randomCode();
         if (await roomStub(env, code).init(code)) return json({ code } satisfies CreateRoomResponse, 201);
       }
-      return json({ error: 'Não foi possível criar a sala, tente de novo.' }, 503);
+      return json({ error: 'Não foi possível abrir a mesa, tente de novo.' }, 503);
     }
 
     const roomMatch = path.match(/^\/api\/rooms\/([^/]+)$/);
