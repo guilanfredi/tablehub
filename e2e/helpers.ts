@@ -18,6 +18,8 @@ export async function createRoom(page: Page): Promise<string> {
   await page.waitForURL(/\/sala\/[A-Z0-9]{5}/);
   const code = page.url().match(/\/sala\/([A-Z0-9]{5})/)![1];
   await expect(page.getByText(code, { exact: false }).first()).toBeVisible();
+  // só depois de entrar na sala (o "Conectando à sala…" também mostra o código): garante que o criador é o dono
+  await expect(page.getByRole('heading', { name: /Jogadores/ })).toBeVisible();
   return code;
 }
 

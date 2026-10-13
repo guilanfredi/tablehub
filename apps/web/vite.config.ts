@@ -32,6 +32,8 @@ export default defineConfig({
         // o jogo depende do servidor; cacheia só o "shell" do app
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//, /^\/ws\//],
+        // clique na notificação de vez (lib/turnAlert.ts)
+        importScripts: ['sw-notify.js'],
       },
     }),
   ],

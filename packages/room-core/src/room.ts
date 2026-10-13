@@ -10,6 +10,8 @@ import {
   type GameOptions,
 } from '@tablehub/game-sdk';
 import {
+  AVATARS,
+  defaultAvatar,
   MAX_ROOM_PLAYERS,
   type GameStatusView,
   type MatchResult,
@@ -24,10 +26,24 @@ export type GameRegistry = Record<string, GameDefinition>;
 export const OWNER_GRACE_MS = 60_000;
 /** Sala sem ninguém conectado é apagada após esse tempo. */
 export const ROOM_IDLE_TTL_MS = 2 * 60 * 60_000;
+/** Tempo de "pensar" do bot (ms): primeira ação da vez e ações seguidas do mesmo bot. */
+export const BOT_THINK_MS = { first: [1200, 2500], next: [600, 1000] } as const;
+/** Nomes dos bots, escolhidos pelo dono do produto. */
+export const BOT_NAMES = ['Paula', 'Jacinto', 'Benjamin', 'Cuca', 'Kelly', 'Oscar', 'Simas', 'Giuseppe', 'Sujiro', 'Tati', 'Kevin'];
+
+/** Nome comparável: sem acento, minúsculo e sem espaços nas pontas. */
+const normName = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .trim()
+    .toLowerCase();
 
 export interface RoomPlayer {
   id: string;
   name: string;
+  /** Id de `AVATARS`; ausente em salas antigas/clientes antigos (usa `defaultAvatar`). */
+  avatar?: string;
   ready: boolean;
   readyAtVersion: number;
   connected: boolean;
@@ -56,6 +72,10 @@ export interface RoomData {
   status: RoomStatus;
   game: RoomGame | null;
   lastResult: MatchResult | null;
+  /** Instante em que o bot da vez joga (sorteado uma vez por vez; ver `botDue`). */
+  botDueAt?: number | null;
+  /** Quem fez a última ação da partida (distingue ação seguida do mesmo bot). */
+  lastActor?: string | null;
 }
 
 export type Result = { ok: true } | { ok: false; error: string };
@@ -76,6 +96,8 @@ export function createRoom(code: string, now: number): RoomData {
     status: 'lobby',
     game: null,
     lastResult: null,
+    botDueAt: null,
+    lastActor: null,
   };
 }
 
@@ -110,23 +132,41 @@ export class RoomService {
     return room.gameId !== null && Boolean(this.bots[room.gameId]);
   }
 
-  addBot(room: RoomData, by: string, now: number): Result {
+  /** Adiciona um bot com nome e avatar sorteados entre os que ainda não estão em uso na sala. */
+  addBot(room: RoomData, by: string, now: number, seed: number): Result {
     if (!this.isOwner(room, by)) return fail('Só o dono da sala pode adicionar bots.');
     if (room.status === 'playing') return fail('A partida está em andamento.');
     if (!this.botsAvailable(room)) return fail('Este jogo ainda não tem bots.');
     if (room.players.length >= this.capacity(room)) return fail('A sala está cheia.');
     let n = 1;
     while (room.players.some((p) => p.id === `bot-${n}`)) n++;
-    room.players.push({ id: `bot-${n}`, name: `Bot ${n}`, ready: true, readyAtVersion: room.optionsVersion, connected: true, disconnectedAt: null, bot: true });
+    const rng = new Rng(seed);
+    const usedNames = new Set(room.players.map((p) => normName(p.name)));
+    const freeNames = BOT_NAMES.filter((name) => !usedNames.has(normName(name)));
+    const allAvatars = AVATARS.map((a) => a.id);
+    const usedAvatars = new Set<string>(room.players.map((p) => p.avatar ?? defaultAvatar(p.id)));
+    const freeAvatars = allAvatars.filter((a) => !usedAvatars.has(a));
+    room.players.push({
+      id: `bot-${n}`,
+      name: freeNames.length ? rng.pick(freeNames) : `Bot ${n}`,
+      avatar: rng.pick(freeAvatars.length ? freeAvatars : allAvatars),
+      ready: true,
+      readyAtVersion: room.optionsVersion,
+      connected: true,
+      disconnectedAt: null,
+      bot: true,
+    });
     room.updatedAt = now;
     return OK;
   }
 
-  join(room: RoomData, id: string, name: string, now: number): Result {
+  join(room: RoomData, id: string, name: string, avatar: string | undefined, now: number): Result {
     const existing = this.player(room, id);
     room.updatedAt = now;
     if (existing) {
       existing.name = name;
+      // durante a partida o avatar não muda (só preenche quem ainda não tinha)
+      if (avatar && (room.status !== 'playing' || !existing.avatar)) existing.avatar = avatar;
       existing.connected = true;
       existing.disconnectedAt = null;
       if (!room.ownerId) room.ownerId = id;
@@ -134,7 +174,7 @@ export class RoomService {
     }
     if (room.status === 'playing') return fail('A partida já começou nesta sala.');
     if (room.players.length >= this.capacity(room)) return fail('A sala está cheia.');
-    room.players.push({ id, name, ready: false, readyAtVersion: 0, connected: true, disconnectedAt: null });
+    room.players.push({ id, name, ...(avatar ? { avatar } : {}), ready: false, readyAtVersion: 0, connected: true, disconnectedAt: null });
     if (!room.ownerId) room.ownerId = id;
     return OK;
   }
@@ -147,9 +187,13 @@ export class RoomService {
     room.updatedAt = now;
   }
 
-  rename(room: RoomData, id: string, name: string): Result {
+  rename(room: RoomData, id: string, name: string, avatar?: string): Result {
     const p = this.player(room, id);
     if (!p) return fail('Você não está nesta sala.');
+    if (avatar && avatar !== (p.avatar ?? defaultAvatar(p.id))) {
+      if (room.status === 'playing') return fail('Não é possível trocar o avatar durante a partida.');
+      p.avatar = avatar;
+    }
     p.name = name;
     return OK;
   }
@@ -260,6 +304,8 @@ export class RoomService {
     const state = def.setup({ players, options: room.options, seed });
     room.game = { gameId: def.id, state, seq: 0 };
     room.status = 'playing';
+    room.botDueAt = null;
+    room.lastActor = null;
     room.lastResult = null;
     room.updatedAt = now;
     return OK;
@@ -273,6 +319,8 @@ export class RoomService {
     if (isActionError(result)) return fail(result.error);
     room.game.state = result;
     room.game.seq++;
+    room.lastActor = by;
+    room.botDueAt = null;
     room.updatedAt = now;
     const status = def.getStatus(result);
     if (status.phase === 'finished') {
@@ -295,6 +343,7 @@ export class RoomService {
   private resetToLobby(room: RoomData): void {
     room.status = 'lobby';
     room.game = null;
+    room.botDueAt = null;
     for (const p of room.players) p.ready = Boolean(p.bot);
   }
 
@@ -306,6 +355,24 @@ export class RoomService {
     if (!def || !this.bots[def.id]) return null;
     const current = def.getStatus(room.game.state).currentPlayers;
     return room.players.find((p) => p.bot && current.includes(p.id))?.id ?? null;
+  }
+
+  /**
+   * Instante em que o bot da vez deve jogar, ou null se nenhum bot precisa jogar. O prazo é sorteado
+   * uma vez por vez e fica em `botDueAt` até a próxima ação: primeira ação da vez em `BOT_THINK_MS.first`,
+   * ação seguida do mesmo bot em `BOT_THINK_MS.next`.
+   */
+  botDue(room: RoomData, now: number, seed: number): number | null {
+    const bot = this.pendingBot(room);
+    if (!bot) {
+      room.botDueAt = null;
+      return null;
+    }
+    if (room.botDueAt == null) {
+      const [min, max] = room.lastActor === bot ? BOT_THINK_MS.next : BOT_THINK_MS.first;
+      room.botDueAt = now + min + new Rng(seed).int(max - min + 1);
+    }
+    return room.botDueAt;
   }
 
   /**
@@ -370,7 +437,15 @@ export class RoomService {
     return {
       code: room.code,
       ownerId: room.ownerId,
-      players: room.players.map(({ id, name, ready, readyAtVersion, connected, bot }) => ({ id, name, ready, readyAtVersion, connected, bot: Boolean(bot) })),
+      players: room.players.map(({ id, name, avatar, ready, readyAtVersion, connected, bot }) => ({
+        id,
+        name,
+        avatar: avatar ?? defaultAvatar(id),
+        ready,
+        readyAtVersion,
+        connected,
+        bot: Boolean(bot),
+      })),
       botsAvailable: this.botsAvailable(room),
       gameId: room.gameId,
       options: room.options,

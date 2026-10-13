@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { NAME_MAX, normalizeRoomCode } from '@tablehub/shared';
+import { normalizeRoomCode } from '@tablehub/shared';
+import { ProfileEditor } from '../components/avatars/ProfileEditor';
 import { GameTable } from '../components/GameTable';
 import { Lobby } from '../components/Lobby';
 import { getName, setName } from '../lib/session';
@@ -56,10 +57,7 @@ function AskName({ onDone, code }: { onDone: () => void; code: string }) {
   return (
     <form className="card stack" style={{ maxWidth: 460, margin: '0 auto' }} onSubmit={submit}>
       <h2>Entrar na sala {code}</h2>
-      <label className="label" htmlFor="ask-name">
-        Seu apelido
-      </label>
-      <input id="ask-name" className="input" autoFocus maxLength={NAME_MAX} value={name} onChange={(e) => setNameState(e.target.value)} />
+      <ProfileEditor name={name} onName={setNameState} inputId="ask-name" autoFocus />
       <button className="btn btn-primary" type="submit" disabled={!name.trim()}>
         Entrar
       </button>

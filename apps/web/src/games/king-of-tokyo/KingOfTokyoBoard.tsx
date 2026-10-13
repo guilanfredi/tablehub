@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CARD_BY_ID, FACES, type Face, type KingOfTokyoAction, type KingOfTokyoView } from '@tablehub/games/king-of-tokyo/engine';
+import { SeatAvatar } from '../../components/avatars/SeatAvatar';
 import type { BoardProps } from '../registry';
 import { FACE_NAMES, FaceIcon, MonsterPortrait } from './art';
 import './king-of-tokyo.css';
@@ -23,7 +24,7 @@ function PowerCard({ id, onZoom, small, extra }: { id: string; onZoom: (id: stri
   );
 }
 
-export default function KingOfTokyoBoard({ game, you, act }: BoardProps) {
+export default function KingOfTokyoBoard({ game, room, you, act }: BoardProps) {
   const v = game.view as KingOfTokyoView;
   const legal = game.legal as KingOfTokyoAction[];
   const [keep, setKeep] = useState<number[]>([]);
@@ -354,7 +355,10 @@ export default function KingOfTokyoBoard({ game, you, act }: BoardProps) {
               <div className="row kot-monster-head">
                 <MonsterPortrait monster={m.monster} dead={!m.alive} />
                 <div className="grow">
-                  <strong>{nameOf(p.id)}</strong>
+                  <span className="row" style={{ gap: 6, flexWrap: 'nowrap' }}>
+                    <SeatAvatar game={game} room={room} id={p.id} size={24} />
+                    <strong>{nameOf(p.id)}</strong>
+                  </span>
                   <div className="muted small">
                     {m.monster}
                     {m.place === 'city' ? ' · Cidade' : m.place === 'bay' ? ' · Baía' : ''}

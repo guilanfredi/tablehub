@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { catanGraph, RESOURCE_LABEL, RESOURCES, type Resource } from '@tablehub/games/catan/board';
 import { COSTS, DEV_LABEL, type CatanAction, type CatanView, type DevType, type Resources } from '@tablehub/games/catan/engine';
+import { SeatAvatar } from '../../components/avatars/SeatAvatar';
 import { PanZoom } from '../../components/board/PanZoom';
 import type { BoardProps } from '../registry';
 import { CityShape, ResourceGlyph, RESOURCE_COLOR, RobberShape, SettlementShape, TERRAIN_FILL, TerrainGlyph } from './art';
@@ -52,7 +53,7 @@ function Stepper({ value, onChange, max }: { value: number; onChange(n: number):
   );
 }
 
-export default function CatanBoard({ game, you, act }: BoardProps) {
+export default function CatanBoard({ game, room, you, act }: BoardProps) {
   const v = game.view as CatanView;
   const legal = game.legal as CatanAction[];
   const g = catanGraph();
@@ -106,6 +107,7 @@ export default function CatanBoard({ game, you, act }: BoardProps) {
         {v.players.map((p) => (
           <div key={p.id} className={`catan-player ${p.id === v.current ? 'active' : ''}`} style={{ borderColor: p.color }}>
             <span className="swatch" style={{ background: p.color }} />
+            <SeatAvatar game={game} room={room} id={p.id} size={26} />
             <strong className="pname">{nameOf(p.id)}</strong>
             <span className="vp" title="Pontos de vitória">
               ★ {p.id === you && v.myVp !== null ? v.myVp : p.publicVp}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DominoAction, DominoView, Side, Tile } from '@tablehub/games/domino/engine';
+import { SeatAvatar } from '../../components/avatars/SeatAvatar';
 import type { BoardProps } from '../registry';
 import './domino.css';
 
@@ -159,6 +160,7 @@ export default function DominoBoard({ game, room, you, act }: BoardProps) {
         {v.players.map((p) => (
           <div key={p.id} className={`score-chip ${p.id === v.turn ? 'active' : ''}`}>
             {teams && <span className="badge">{p.team === 0 ? 'A' : 'B'}</span>}
+            <SeatAvatar game={game} room={room} id={p.id} size={26} />
             <span>{p.id === you ? 'Você' : p.name}</span>
             {p.id !== you && (
               <span className="domino-mini-hand" aria-hidden="true">

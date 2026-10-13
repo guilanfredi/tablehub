@@ -8,8 +8,8 @@ import type { Env } from './env';
 
 const svc = new RoomService(GAMES, BOTS);
 const MAX_MESSAGE_BYTES = 16 * 1024;
-/** Pausa antes de cada jogada de bot, para os humanos acompanharem. */
-const BOT_DELAY_MS = 1000;
+/** Antecedência mínima de um alarme (evita agendar no passado). */
+const MIN_ALARM_MS = 50;
 
 interface Attachment {
   playerId: string | null;
@@ -83,7 +83,7 @@ export class RoomDurableObject extends DurableObject<Env> {
     if (msg.t === 'ping') return this.sendTo(ws, { t: 'pong' });
 
     const att = ws.deserializeAttachment() as Attachment;
-    if (msg.t === 'hello') return this.hello(ws, msg.token, msg.name);
+    if (msg.t === 'hello') return this.hello(ws, msg.token, msg.name, msg.avatar);
     if (!att?.playerId) return this.sendTo(ws, { t: 'error', message: 'Identifique-se primeiro.' });
 
     const playerId = att.playerId;
@@ -105,7 +105,7 @@ export class RoomDurableObject extends DurableObject<Env> {
         if (result.ok) this.dropPlayer(msg.playerId, { t: 'kicked' });
         break;
       case 'addBot':
-        result = svc.addBot(room, playerId, now);
+        result = svc.addBot(room, playerId, now, randomSeed());
         break;
       case 'ready':
         result = svc.setReady(room, playerId, msg.ready);
@@ -120,7 +120,7 @@ export class RoomDurableObject extends DurableObject<Env> {
         result = svc.backToLobby(room, playerId);
         break;
       case 'rename':
-        result = svc.rename(room, playerId, msg.name);
+        result = svc.rename(room, playerId, msg.name, msg.avatar);
         break;
       case 'leave':
         result = svc.leave(room, playerId, now);
@@ -131,10 +131,10 @@ export class RoomDurableObject extends DurableObject<Env> {
     await this.commit();
   }
 
-  private async hello(ws: WebSocket, token: string, name: string) {
+  private async hello(ws: WebSocket, token: string, name: string, avatar: string | undefined) {
     const room = this.room!;
     const playerId = await playerIdFromToken(token);
-    const res = svc.join(room, playerId, name, Date.now());
+    const res = svc.join(room, playerId, name, avatar, Date.now());
     if (!res.ok) return this.fatal(ws, res.error, 4409);
     // fecha conexões antigas do mesmo jogador (outra aba/reconexão)
     for (const other of this.sockets(playerId)) {
@@ -178,7 +178,9 @@ export class RoomDurableObject extends DurableObject<Env> {
       await this.ctx.storage.deleteAll();
       return;
     }
-    if (svc.pendingBot(this.room)) svc.playBot(this.room, randomSeed(), Date.now());
+    const now = Date.now();
+    const due = svc.botDue(this.room, now, randomSeed());
+    if (due !== null && due <= now) svc.playBot(this.room, randomSeed(), now);
     await this.commit();
   }
 
@@ -218,7 +220,11 @@ export class RoomDurableObject extends DurableObject<Env> {
   }
 
   private async persist() {
-    if (this.room) await this.ctx.storage.put('room', this.room);
+    if (this.room) {
+      // sorteia (uma vez por vez) quando o bot da vez joga, antes de salvar
+      svc.botDue(this.room, Date.now(), randomSeed());
+      await this.ctx.storage.put('room', this.room);
+    }
     await this.scheduleAlarm();
   }
 
@@ -253,8 +259,8 @@ export class RoomDurableObject extends DurableObject<Env> {
       if (room.status === 'lobby' && stale.length) next = Math.min(next ?? Infinity, ...stale);
     }
     const now = Date.now();
-    if (svc.pendingBot(room)) next = Math.min(next ?? Infinity, now + BOT_DELAY_MS);
+    if (room.botDueAt != null) next = Math.min(next ?? Infinity, room.botDueAt);
     if (next === null) await this.ctx.storage.deleteAlarm();
-    else await this.ctx.storage.setAlarm(Math.max(next, now + BOT_DELAY_MS));
+    else await this.ctx.storage.setAlarm(Math.max(next, now + MIN_ALARM_MS));
   }
 }
