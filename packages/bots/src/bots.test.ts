@@ -4,7 +4,9 @@ import { GAMES } from '@tablehub/games';
 import { createRoom, RoomService } from '@tablehub/room-core';
 import type { DominoView } from '@tablehub/games/domino/engine';
 import type { TrucoView } from '@tablehub/games/truco-paulista/engine';
-import { BOTS, dominoBot, trucoBot } from './index';
+import type { CatanView } from '@tablehub/games/catan/engine';
+import type { KingOfTokyoView } from '@tablehub/games/king-of-tokyo/engine';
+import { BOTS, catanBot, dominoBot, kingOfTokyoBot, trucoBot } from './index';
 
 const svc = new RoomService(GAMES, BOTS);
 
@@ -34,8 +36,8 @@ function playWithBots(gameId: string, bots: number, options: GameOptions, seed: 
 }
 
 describe('bots', () => {
-  it('só há bots para Dominó e Truco', () => {
-    expect(Object.keys(BOTS).sort()).toEqual(['domino', 'truco-paulista']);
+  it('todos os jogos têm bots', () => {
+    expect(Object.keys(BOTS).sort()).toEqual(Object.keys(GAMES).sort());
     for (const bot of Object.values(BOTS)) expect(GAMES[bot.gameId]).toBeDefined();
   });
 
@@ -45,11 +47,57 @@ describe('bots', () => {
     ['domino', 3, { teams: true }],
     ['truco-paulista', 1, {}],
     ['truco-paulista', 3, {}],
+    ['catan', 2, { board: 'beginner', vpToWin: 10, discardLimit: 7 }],
+    ['catan', 3, { board: 'random', vpToWin: 8, discardLimit: 7 }],
+    ['king-of-tokyo', 1, { powerCards: true }],
+    ['king-of-tokyo', 5, { powerCards: true }],
+    ['king-of-tokyo', 3, { powerCards: false }],
   ] as const)('%s com %i bot(s) termina a partida', (gameId, bots, options) => {
     for (const seed of [1, 2, 3]) {
       const room = playWithBots(gameId, bots, options, seed);
       expect(room.status).toBe('finished');
     }
+  });
+
+  it.each(['catan', 'king-of-tokyo'])('%s: bots vencem um humano que só passa a vez', (gameId) => {
+    for (const seed of [1, 2, 3]) {
+      const room = playWithBots(gameId, 2, {}, seed);
+      const winners = svc.gameViewFor(room, 'h')!.status.winners ?? [];
+      expect(winners.length).toBeGreaterThan(0);
+      expect(winners).not.toContain('h');
+    }
+  });
+
+  it('catan: aceita troca que completa o objetivo e recusa a que não ajuda', () => {
+    const room = playWithBots('catan', 2, {}, 1);
+    const view = { ...(svc.gameViewFor(room, 'bot-1')!.view as CatanView) };
+    const hand = { brick: 1, lumber: 0, wool: 1, grain: 3, ore: 0 };
+    view.myHand = hand;
+    // sem cidade possível: o objetivo vira aldeia (ou estrada); madeira sempre ajuda
+    view.buildings = Object.fromEntries(Object.entries(view.buildings).map(([k, b]) => [k, { ...b, kind: b.owner === 'bot-1' ? 'city' : b.kind }]));
+    view.players = view.players.map((p) => ({ ...p, publicVp: 2 }));
+    const legal = [{ type: 'respondTrade', accept: false }, { type: 'respondTrade', accept: true }] as const;
+    const turn = (give: Record<string, number>, get: Record<string, number>) => ({
+      playerId: 'bot-1',
+      view: { ...view, trade: { from: 'h', give, get, responses: { 'bot-1': null } } },
+      status: { phase: 'playing' as const, currentPlayers: ['h', 'bot-1'] },
+      legal: legal.map((a) => ({ ...a })),
+    });
+    expect(catanBot.chooseAction(turn({ lumber: 1 }, { grain: 1 }), new Rng(1))).toEqual({ type: 'respondTrade', accept: true });
+    expect(catanBot.chooseAction(turn({ ore: 1 }, { brick: 1 }), new Rng(1))).toEqual({ type: 'respondTrade', accept: false });
+  });
+
+  it('king of tokyo: cede Tóquio com pouca Vida e fica com Vida sobrando', () => {
+    const room = playWithBots('king-of-tokyo', 1, {}, 1);
+    const base = svc.gameViewFor(room, 'bot-1')!.view as KingOfTokyoView;
+    const turn = (hp: number) => ({
+      playerId: 'bot-1',
+      view: { ...base, monsters: { ...base.monsters, 'bot-1': { ...base.monsters['bot-1'], hp, place: 'city' as const } }, pending: { type: 'yield' as const, players: ['bot-1'] } },
+      status: { phase: 'playing' as const, currentPlayers: ['bot-1'] },
+      legal: [{ type: 'yield' as const, leave: true }, { type: 'yield' as const, leave: false }],
+    });
+    expect(kingOfTokyoBot.chooseAction(turn(3), new Rng(1))).toEqual({ type: 'yield', leave: true });
+    expect(kingOfTokyoBot.chooseAction(turn(9), new Rng(1))).toEqual({ type: 'yield', leave: false });
   });
 
   it('dominó: joga a pedra mais pesada', () => {
