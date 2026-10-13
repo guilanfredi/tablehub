@@ -45,6 +45,7 @@ export function GameTable() {
             <button
               className="btn btn-sm history-btn"
               aria-expanded={history.open}
+              data-total={log.total}
               aria-label={unread ? `Histórico, ${unread} ${unread === 1 ? 'nova' : 'novas'}` : 'Histórico'}
               onClick={() => history.setOpen(!history.open)}
             >
