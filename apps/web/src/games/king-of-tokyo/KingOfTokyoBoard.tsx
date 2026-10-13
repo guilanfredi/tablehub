@@ -63,7 +63,7 @@ function HpFloat({ hp }: { hp: number }) {
 export default function KingOfTokyoBoard({ game, room, you, act }: BoardProps) {
   const v = game.view as KingOfTokyoView;
   const legal = game.legal as KingOfTokyoAction[];
-  const [keep, setKeep] = useState<number[]>([]);
+  const [reroll, setReroll] = useState<number[]>([]);
   const [zoom, setZoom] = useState<string | null>(null);
   const [modDie, setModDie] = useState(0);
   const [modFace, setModFace] = useState<Face>('claw');
@@ -77,15 +77,16 @@ export default function KingOfTokyoBoard({ game, room, you, act }: BoardProps) {
   const pendingMine = v.pending?.players.includes(you) ?? false;
   const nameOf = (id: string) => (id === you ? 'Você' : (v.monsters[id]?.name ?? id));
 
-  // dados guardados recomeçam a cada rolagem nova
-  useEffect(() => setKeep(v.dice.map((d, i) => (d.kept ? i : -1)).filter((i) => i >= 0)), [v.rollsUsed, v.turn]);
+  // a seleção de dados a rerrolar recomeça a cada rolagem nova
+  useEffect(() => setReroll([]), [v.rollsUsed, v.turn]);
 
   // dados que acabaram de rolar chacoalham
   const justRolled = useFreshKeys(v.rollsUsed > 0 ? [`${v.turn}:${v.rollsUsed}`] : []).size > 0;
 
   const canRoll = has('roll');
   const rolling = v.phase === 'roll' && myTurn && !v.pending;
-  const toggleKeep = (i: number) => setKeep((k) => (k.includes(i) ? k.filter((x) => x !== i) : [...k, i]));
+  const toggleReroll = (i: number) => setReroll((r) => (r.includes(i) ? r.filter((x) => x !== i) : [...r, i]));
+  const keep = v.dice.map((_, i) => i).filter((i) => !reroll.includes(i));
 
   const city = v.players.find((p) => v.monsters[p.id].alive && v.monsters[p.id].place === 'city');
   const bay = v.players.find((p) => v.monsters[p.id].alive && v.monsters[p.id].place === 'bay');
@@ -316,11 +317,11 @@ export default function KingOfTokyoBoard({ game, room, you, act }: BoardProps) {
             <button
               key={i}
               type="button"
-              className={`kot-die ${keep.includes(i) ? 'kept' : ''} ${d.green ? 'green' : ''} ${justRolled && !d.kept ? 'shake' : ''}`}
+              className={`kot-die ${reroll.includes(i) ? 'reroll' : ''} ${d.green ? 'green' : ''} ${justRolled && !d.kept ? 'shake' : ''}`}
               disabled={!rolling || v.rollsUsed === 0}
-              onClick={() => toggleKeep(i)}
-              aria-pressed={keep.includes(i)}
-              aria-label={`Dado ${i + 1}: ${FACE_NAMES[d.face]}${keep.includes(i) ? ' (guardado)' : ''}`}
+              onClick={() => toggleReroll(i)}
+              aria-pressed={reroll.includes(i)}
+              aria-label={`Dado ${i + 1}: ${FACE_NAMES[d.face]}${reroll.includes(i) ? ' (para rerrolar)' : ''}`}
             >
               <FaceIcon face={d.face} size={26} />
             </button>
@@ -328,10 +329,10 @@ export default function KingOfTokyoBoard({ game, room, you, act }: BoardProps) {
         </div>
         {rolling && (
           <>
-            {v.rollsUsed > 0 && canRoll && <span className="muted small">Toque nos dados para guardar.</span>}
+            {v.rollsUsed > 0 && canRoll && <span className="muted small">Toque nos dados que quer rerrolar.</span>}
             <div className="row">
               {canRoll && (
-                <button className="btn btn-primary grow" onClick={() => send(v.rollsUsed === 0 ? { type: 'roll' } : { type: 'roll', keep })}>
+                <button className="btn btn-primary grow" disabled={v.rollsUsed > 0 && reroll.length === 0} onClick={() => send(v.rollsUsed === 0 ? { type: 'roll' } : { type: 'roll', keep })}>
                   {v.rollsUsed === 0 ? 'Rolar dados' : 'Rolar de novo'}
                 </button>
               )}

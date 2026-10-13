@@ -26,7 +26,8 @@ async function step(pages: Page[], buy: boolean): Promise<boolean> {
         // rola no máximo 2 vezes para a partida andar rápido; guarda as garras
         if (name === 'Rolar de novo') {
           if ((await p.locator('.kot-dice-head .muted').first().innerText()).startsWith('rolagem 2')) continue;
-          const dice = p.locator('.kot-dice .kot-die[aria-label*="garra"]:not(.kept)');
+          const dice = p.locator('.kot-dice .kot-die:not([aria-label*="garra"])');
+          if ((await dice.count()) === 0) continue;
           for (let i = (await dice.count()) - 1; i >= 0; i--) await dice.nth(i).click();
         }
         await p.getByRole('button', { name, exact: true }).first().click();

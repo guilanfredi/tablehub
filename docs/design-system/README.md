@@ -51,7 +51,7 @@ A paleta Taverna é quente e escura. O âmbar é a cor da marca; coral, verde-á
 | `support` #3FC1A5 | Online, pronto, em andamento |
 | `support-soft` #17332C | Fundo do selo Pronto |
 | `info` #8FB8FF | Links, jogo leve, avatares |
-| `table` #3B2B21 · `table-edge` #2A1F18 | Tampo de madeira da mesa de jogo |
+| `table` #245C42 · `table-edge` #163A2A | Tampo de feltro verde da mesa de jogo |
 
 Regras:
 
@@ -62,7 +62,7 @@ Regras:
 - Coral e verde-água têm luminosidade parecida. O texto do selo sempre diz o estado; a cor só reforça.
 - `line` é decorativo. Bordas de campos, opções e assentos vazios usam `line-strong`.
 - **Foco:** anel sólido de 3px em `primary`, afastado 2px, em todo elemento clicável.
-- **Mesa de jogo:** o tampo é madeira (`table` → `table-edge`, degradê radial), não feltro verde.
+- **Mesa de jogo:** o tampo é feltro verde (`table` → `table-edge`, degradê radial).
 
 ## Tipografia
 
@@ -91,7 +91,7 @@ Os estilos estão em `apps/web/src/design-system/components.css` e as variáveis
 
 Animações são curtas (150–350 ms), nunca atrasam cliques e somem por completo com `prefers-reduced-motion`.
 
-A classe `felt` continua funcionando e desenha o tampo de madeira; prefira `table-top` em código novo.
+A classe `felt` continua funcionando e desenha o tampo de feltro; prefira `table-top` em código novo.
 
 ## Iconografia e imagens
 

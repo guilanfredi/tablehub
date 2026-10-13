@@ -171,3 +171,7 @@ a { color: var(--info); }
 /* ---------- Mesa ---------- */
 .table-header { margin-bottom: 10px; }
 .panzoom-controls .btn { width: 36px; min-height: 36px; padding: 0; font-size: 1.1rem; box-shadow: var(--shadow-float); }
+@media (max-width: 600px) {
+  .table-header strong { margin-right: auto; }
+  .status-pill { order: 3; flex: 1 0 100%; }
+}
