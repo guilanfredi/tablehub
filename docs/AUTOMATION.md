@@ -11,7 +11,7 @@ Aqui no TableHub fica só o que é do projeto, em `.agents/`. O despachante lê 
 | Arquivo | O que define |
 |---|---|
 | `.agents/config.json` | repositório, dono, bot, etiquetas, funções (fase, tempo máximo, só-PR), pasta dos worktrees (`../TableHub-agents`), `npm ci` quando o lockfile muda, portas |
-| `.agents/roles/<função>.json` | permissões do Claude Code de cada função: todas negam merge, force-push, push na `main`, segredos, `gh auth` (exceto `status`), deploy e acesso à web; o Revisor não tem `Edit`/`Write` nem `git commit`/`git push` |
+| `.agents/roles/<função>.json` | permissões do Claude Code de cada função (no modo automático, o que não está liberado é negado; quem edita roda em `acceptEdits`): todas negam merge, force-push, push na `main`, segredos, `gh auth` (exceto `status`), deploy e acesso à web; o Revisor não tem `Edit`/`Write` nem `git commit`/`git push` |
 | `.agents/prompt.md` | instruções do TableHub para o modo automático (Playwright, portas, manuais) |
 
 ## Portas por instância
