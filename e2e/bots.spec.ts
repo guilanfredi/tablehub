@@ -38,7 +38,7 @@ for (const [game, bots] of [['Catan', 2], ['King of Tokyo', 1]] as const) {
     await createRoom(ana);
     await chooseGame(ana, game);
     for (let i = 0; i < bots; i++) await ana.getByRole('button', { name: 'Adicionar bot' }).click();
-    await expect(ana.locator('.player-item', { hasText: `Bot ${bots}` })).toBeVisible();
+    await expect(ana.locator('.player-item.is-bot')).toHaveCount(bots);
     await startGame(ana);
     await expect(ana.locator('.status-pill.my-turn')).toBeVisible({ timeout: 30_000 });
     expect(errors).toEqual([]);
@@ -85,8 +85,8 @@ test('bots: Truco 4 jogadores (1 humano + 3 bots) — bots jogam, cartas deles o
   await startGame(ana);
   // só as minhas cartas aparecem; dos bots vejo só a contagem
   await expect(ana.locator('.truco-hand .pcard-btn')).toHaveCount(3);
-  await expect(ana.locator('.truco-seat').nth(1)).toContainText('carta');
-  await expect(ana.locator('.truco-seat .avatar-bot')).toHaveCount(3);
+  await expect(ana.locator('.gt-seat:not(:has(.gt-seat-name:text-is("Você")))').first()).toContainText('carta');
+  await expect(ana.locator('.gt-seat .avatar-bot')).toHaveCount(3);
   for (let turn = 0; turn < 3; turn++) {
     await expect(ana.locator('.status-pill.my-turn')).toBeVisible({ timeout: 15_000 });
     const accept = ana.getByRole('button', { name: /Aceitar|Aceito/ });

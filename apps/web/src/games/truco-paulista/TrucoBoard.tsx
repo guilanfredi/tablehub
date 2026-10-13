@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { BET_NAMES, type Card, type TrucoAction, type TrucoView } from '@tablehub/games/truco-paulista/engine';
-import { SeatAvatar } from '../../components/avatars/SeatAvatar';
+import { useFreshKeys } from '../../components/table/anim';
+import { GameTableLayout, fromSeat } from '../../components/table/GameTableLayout';
+import { arrangeSeats } from '../../components/table/seats';
 import type { BoardProps } from '../registry';
 import './truco.css';
 
@@ -31,9 +33,27 @@ export default function TrucoBoard({ game, room, you, act }: BoardProps) {
   const myTeam = v.myTeam ?? 0;
   const teamLabel = (t: number) => (v.players.length === 4 ? (t === myTeam ? 'Nós' : 'Eles') : t === myTeam ? 'Você' : (v.players.find((p) => p.team === t)?.name ?? ''));
 
-  // ordem na mesa a partir de mim
-  const myIdx = Math.max(0, v.players.findIndex((p) => p.id === you));
-  const seats = v.players.map((_, i) => v.players[(myIdx + i) % v.players.length]);
+  const places = arrangeSeats(
+    v.players.map((p) => p.id),
+    you,
+  );
+  const fresh = useFreshKeys(v.current.map((c) => `${v.handNumber}:${v.tricks.length}:${c.playerId}`));
+  const lastTrick = v.tricks.at(-1);
+  const collecting = useFreshKeys(lastTrick ? [`${v.handNumber}:${v.tricks.length}`] : [], 900).size > 0;
+  const counters = (id: string) => {
+    const p = v.players.find((x) => x.id === id)!;
+    return (
+      <>
+        {v.players.length === 4 && <span className="badge">{p.team === myTeam ? 'Nós' : 'Eles'}</span>}
+        {id !== you && (
+          <span>
+            {p.cards} {p.cards === 1 ? 'carta' : 'cartas'}
+          </span>
+        )}
+        {id === v.dealer && <span title="Deu as cartas">deu</span>}
+      </>
+    );
+  };
 
   const playCard = (index: number) => {
     act({ type: 'play', index, faceDown: faceDown && canFaceDown });
@@ -60,45 +80,67 @@ export default function TrucoBoard({ game, room, you, act }: BoardProps) {
         </div>
       </div>
 
-      <div className="felt truco-felt">
-        <div className="vira">
-          <span className="small">Vira</span>
-          <PlayingCard card={v.vira} small />
-          <span className="small">
-            Manilha: <strong>{v.manilha}</strong>
-          </span>
-        </div>
-
-        <div className={`truco-seats n${v.players.length}`}>
-          {seats.map((p, i) => {
-            const play = v.current.find((c) => c.playerId === p.id);
+      <GameTableLayout
+        game={game}
+        room={room}
+        you={you}
+        places={places}
+        counters={counters}
+        className="truco-table"
+        cornerLeft={
+          <div className="vira">
+            <PlayingCard card={v.vira} small />
+            <span className="small">
+              Vira · manilha <strong>{v.manilha}</strong>
+            </span>
+          </div>
+        }
+        cornerRight={
+          <div className="tricks">
+            {[0, 1, 2].map((i) => {
+              const t = v.tricks[i];
+              const label = !t ? '·' : t.winnerTeam === null ? '=' : t.winnerTeam === myTeam ? '✓' : '✗';
+              return (
+                <span key={i} className={`trick ${t ? (t.winnerTeam === null ? 'tie' : t.winnerTeam === myTeam ? 'won' : 'lost') : ''}`} title={`Vaza ${i + 1}`}>
+                  {label}
+                </span>
+              );
+            })}
+          </div>
+        }
+      >
+        <div className="truco-trick">
+          {places.map((pl) => {
+            const play = v.current.find((c) => c.playerId === pl.id);
+            const k = `${v.handNumber}:${v.tricks.length}:${pl.id}`;
             return (
-              <div key={p.id} className={`truco-seat pos${i} ${v.turn === p.id ? 'turn' : ''}`}>
-                <SeatAvatar game={game} room={room} id={p.id} size={30} />
-                <div className="seat-name">
-                  {nameOf(p.id)}
-                  {p.id === v.dealer && <span title="Deu as cartas"> · deu</span>}
-                  {p.id !== you && <span className="small"> · {p.cards} {p.cards === 1 ? 'carta' : 'cartas'}</span>}
-                </div>
-                <div className="seat-card">{play ? <PlayingCard card={play.card} back={play.faceDown} manilha={v.manilha} /> : <div className="pcard placeholder" />}</div>
+              <div key={pl.id} className={`truco-slot truco-slot-${pl.region}`}>
+                {play ? (
+                  <div className={`truco-play ${fresh.has(k) ? 'enter' : ''}`} style={fromSeat(pl)}>
+                    <PlayingCard card={play.card} back={play.faceDown} manilha={v.manilha} />
+                  </div>
+                ) : (
+                  <div className="pcard placeholder" />
+                )}
               </div>
             );
           })}
-        </div>
-
-        <div className="tricks">
-          {[0, 1, 2].map((i) => {
-            const t = v.tricks[i];
-            const label = !t ? '·' : t.winnerTeam === null ? '=' : t.winnerTeam === myTeam ? '✓' : '✗';
-            return (
-              <span key={i} className={`trick ${t ? (t.winnerTeam === null ? 'tie' : t.winnerTeam === myTeam ? 'won' : 'lost') : ''}`} title={`Vaza ${i + 1}`}>
-                {label}
-              </span>
-            );
-          })}
+          {collecting && lastTrick && (
+            // o vencedor recolhe a vaza: as cartas ficam um instante e deslizam para o assento dele
+            <div className="truco-trick truco-collect" style={fromSeat(places.find((p) => p.id === lastTrick.winnerPlayer))} aria-hidden="true">
+              {places.map((pl) => {
+                const play = lastTrick.plays.find((c) => c.playerId === pl.id);
+                return (
+                  <div key={pl.id} className={`truco-slot truco-slot-${pl.region}`}>
+                    {play && <PlayingCard card={play.card} back={play.faceDown} manilha={v.manilha} />}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
         {v.lastHand && v.lastHand.number === v.handNumber - 1 && v.tricks.length === 0 && v.current.length === 0 && <div className="small truco-last">{v.lastHand.text}</div>}
-      </div>
+      </GameTableLayout>
 
       {v.pending && (
         <div className="card stack truco-call">
@@ -183,15 +225,6 @@ export default function TrucoBoard({ game, room, you, act }: BoardProps) {
         </div>
         {v.special === 'maoDeFerro' && <p className="muted small" style={{ margin: 0 }}>Mão de ferro: ninguém vê as próprias cartas.</p>}
       </div>
-
-      <details className="card">
-        <summary>Histórico</summary>
-        <div className="log">
-          {[...v.log].reverse().map((l, i) => (
-            <div key={i}>{l}</div>
-          ))}
-        </div>
-      </details>
     </div>
   );
 }

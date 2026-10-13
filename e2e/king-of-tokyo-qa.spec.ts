@@ -16,7 +16,7 @@ async function step(pages: Page[], buy: boolean): Promise<boolean> {
     for (const p of pages) {
       if (await p.locator('.result-card').count()) return false;
       if (!(await p.locator('.status-pill.my-turn').count())) continue;
-      const before = await p.locator('.kot-log').innerText();
+      const before = await p.locator('.kot').innerText();
       const enabled = await p.locator('button:enabled:visible').allInnerTexts();
       const has = (t: string) => enabled.some((x) => x.trim() === t);
       let clicked = false;
@@ -44,7 +44,7 @@ async function step(pages: Page[], buy: boolean): Promise<boolean> {
         clicked = true;
       }
       if (clicked) {
-        await expect.poll(async () => (await p.locator('.result-card').count()) > 0 || (await p.locator('.kot-log').innerText()) !== before || !(await p.locator('.status-pill.my-turn').count())).toBe(true);
+        await expect.poll(async () => (await p.locator('.result-card').count()) > 0 || (await p.locator('.kot').innerText()) !== before || !(await p.locator('.status-pill.my-turn').count())).toBe(true);
         return true;
       }
     }

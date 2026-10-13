@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ClientMessage, GameStatusView, RoomView, ServerMessage } from '@tablehub/shared';
+import type { ClientMessage, GameLogView, GameStatusView, RoomView, ServerMessage } from '@tablehub/shared';
 import { getAvatar, getName, getToken } from '../lib/session';
 import { GAMES } from '@tablehub/games';
 import { becameMyTurn, gameSounds, roomSounds } from '../lib/soundEvents';
@@ -12,6 +12,8 @@ export interface GameState {
   view: any;
   status: GameStatusView;
   legal: any[];
+  /** Histórico público (servidor antigo não manda). */
+  log?: GameLogView;
 }
 
 type Conn = 'idle' | 'connecting' | 'open' | 'reconnecting' | 'closed';
@@ -78,7 +80,7 @@ export const useRoom = create<RoomStore>((set, get) => {
           playFirst(gameSounds(prev, msg, you));
           if (becameMyTurn(prev, msg, you)) turnAlert(GAMES[msg.gameId]?.name ?? 'TableHub');
           else if (!(you && msg.status.phase === 'playing' && msg.status.currentPlayers.includes(you))) stopTurnAlert();
-          set({ game: { gameId: msg.gameId, seq: msg.seq, view: msg.view, status: msg.status, legal: msg.legal } });
+          set({ game: { gameId: msg.gameId, seq: msg.seq, view: msg.view, status: msg.status, legal: msg.legal, log: msg.log } });
           break;
         }
         case 'error':

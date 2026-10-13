@@ -69,79 +69,76 @@
   gap: 4px;
 }
 
-.truco-felt {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
 .vira {
-  position: absolute;
-  top: 10px;
-  left: 10px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  z-index: 1;
+  gap: 8px;
 }
 
-.truco-seats {
+/* vaza no centro: cada carta fica do lado de quem jogou */
+.truco-trick {
+  position: relative;
   display: grid;
   grid-template-areas:
     '. top .'
     'left . right'
     '. bottom .';
   grid-template-columns: 1fr auto 1fr;
-  gap: 8px;
+  gap: 6px;
   justify-items: center;
   align-items: center;
-  min-height: 300px;
-  padding-top: 8px;
 }
-.truco-seats.n2 .pos0 {
-  grid-area: bottom;
-}
-.truco-seats.n2 .pos1 {
+.truco-slot-top {
   grid-area: top;
 }
-.truco-seats.n4 .pos0 {
+.truco-slot-bottom {
   grid-area: bottom;
 }
-.truco-seats.n4 .pos1 {
-  grid-area: right;
-}
-.truco-seats.n4 .pos2 {
-  grid-area: top;
-}
-.truco-seats.n4 .pos3 {
+.truco-slot-left {
   grid-area: left;
 }
-
-.truco-seat {
+.truco-slot-right {
+  grid-area: right;
+}
+.truco-slot {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
 }
-.truco-seat .seat-name {
-  font-size: 0.8rem;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--table-edge);
-  white-space: nowrap;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.truco-play.enter {
+  animation: truco-play-in 300ms ease-out;
 }
-.truco-seat .thinking {
-  color: var(--ink-muted);
+.truco-collect {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: truco-collect 900ms ease-in forwards;
 }
-.truco-seat.turn .seat-name {
-  background: var(--primary);
-  color: var(--on-primary);
-  font-weight: 700;
+@keyframes truco-play-in {
+  from {
+    opacity: 0;
+    transform: translate(calc(var(--dx) * 120px), calc(var(--dy) * 120px)) scale(0.85);
+  }
+}
+@keyframes truco-collect {
+  0%,
+  62% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--dx) * 140px), calc(var(--dy) * 140px)) scale(0.5);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .truco-collect {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .truco-trick .pcard {
+    width: 52px;
+    height: 76px;
+  }
 }
 
 .tricks {

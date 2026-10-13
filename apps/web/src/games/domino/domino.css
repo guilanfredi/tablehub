@@ -1,8 +1,10 @@
-.domino-felt {
-  min-height: 160px;
+.domino-placed {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+}
+
+/* peça jogada entra na linha vindo da direção do assento de quem jogou */
+.domino-placed.enter {
+  animation: domino-play-in 300ms ease-out;
 }
 
 .domino-line {
@@ -129,8 +131,16 @@ button.domino-boneyard {
   display: inline-flex;
 }
 
-.domino-mini-hand .domino-back + .domino-back {
+.domino-mini-hand > span {
+  display: flex;
+}
+
+.domino-mini-hand > span + span {
   margin-left: -3px;
+}
+
+.domino-mini-hand > .leaving {
+  animation: domino-fade-out 300ms ease-in forwards;
 }
 
 .domino-pass-highlight {
@@ -154,27 +164,35 @@ button.domino-boneyard {
   }
 }
 
+/* peça comprada entra na mão com uma leve "virada" */
 @keyframes domino-draw-in {
   from {
     opacity: 0;
-    transform: translateY(-16px) scale(0.85);
+    transform: translateY(-16px) rotateY(90deg) scale(0.85);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0) rotateY(-10deg);
   }
 }
 
-/* celular: o monte fica embaixo do feltro, logo acima da sua mão */
-@media (max-width: 600px) {
-  .domino-boneyard {
-    order: 99;
+@keyframes domino-play-in {
+  from {
+    opacity: 0;
+    transform: translate(calc(var(--dx) * 140px), calc(var(--dy) * 140px)) scale(0.8);
+  }
+}
+
+@keyframes domino-fade-out {
+  to {
+    opacity: 0;
+    transform: scale(0.4);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .domino-boneyard.can-draw,
   .domino-boneyard-tile.leaving,
-  .domino-hand-tile.drawn {
-    animation: none;
-  }
-  .domino-boneyard-tile.leaving {
+  .domino-mini-hand > .leaving {
     display: none;
   }
 }
