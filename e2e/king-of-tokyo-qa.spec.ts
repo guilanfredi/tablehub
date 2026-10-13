@@ -34,10 +34,15 @@ async function step(pages: Page[], buy: boolean): Promise<boolean> {
         break;
       }
       if (!clicked && buy) {
-        const buyBtn = p.locator('.kot-market-slot button:enabled', { hasText: 'Comprar' }).first();
-        if (await buyBtn.count()) {
-          await buyBtn.click();
-          clicked = true;
+        // compra pela carta ampliada: toca nas miniaturas do mercado até achar uma que dê para pagar
+        const minis = p.locator('.kot-market button.kot-mini');
+        for (let i = 0; i < (await minis.count()) && !clicked; i++) {
+          await minis.nth(i).click();
+          const buyBtn = p.locator('.kot-zoom button:enabled', { hasText: 'Comprar' }).first();
+          if (await buyBtn.count()) {
+            await buyBtn.click();
+            clicked = true;
+          } else await p.locator('.kot-zoom').getByRole('button', { name: 'Fechar' }).click();
         }
       }
       if (!clicked && has('Encerrar turno')) {
@@ -65,6 +70,8 @@ async function noHorizontalScroll(page: Page) {
 }
 
 test('king of tokyo QA: lobby, partida completa sem cartas, fim de jogo', async ({ browser }) => {
+  // a duração da partida varia com os dados: 30–60 s em máquina carregada
+  test.setTimeout(150_000);
   const ana = await newPlayer(browser, 'Ana');
   const beto = await newPlayer(browser, 'Beto');
   const errors = [...failOnConsoleErrors(ana), ...failOnConsoleErrors(beto)];
@@ -108,7 +115,7 @@ test('king of tokyo QA: 3 jogadores com cartas até o fim, sem vazar o baralho, 
 
   for (let i = 0; i < 25; i++) await step([ana, beto, caio], true);
   await beto.reload();
-  await expect(beto.locator('.kot-monsters .kot-monster')).toHaveCount(3);
+  await expect(beto.locator('.kot-table .gt-seat')).toHaveCount(3);
   await noHorizontalScroll(beto);
 
   await playToEnd([ana, beto, caio], true, 1500);

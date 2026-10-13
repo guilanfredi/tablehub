@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { CARD_BY_ID, FACES, type Face, type KingOfTokyoAction, type KingOfTokyoView } from '@tablehub/games/king-of-tokyo/engine';
-import { SeatAvatar } from '../../components/avatars/SeatAvatar';
 import { useFreshKeys } from '../../components/table/anim';
+import { GameTableLayout } from '../../components/table/GameTableLayout';
+import { arrangeSeats } from '../../components/table/seats';
 import type { BoardProps } from '../registry';
-import { FACE_NAMES, FaceIcon, MonsterPortrait } from './art';
+import { CardBack, FACE_NAMES, FaceIcon, MonsterPortrait, TokyoBoard } from './art';
 import './king-of-tokyo.css';
 
 const cardSrc = (id: string) => `/games/king-of-tokyo/cards/${id}.webp`;
@@ -11,6 +12,8 @@ const cardAlt = (id: string) => {
   const c = CARD_BY_ID[id];
   return c ? `${c.name} (${c.cost} energia, ${c.kind === 'keep' ? 'Constante' : 'Descarte'}): ${c.text}` : id;
 };
+type OwnedCard = KingOfTokyoView['monsters'][string]['cards'][number];
+const cardExtra = (c: OwnedCard) => (c.copy ? `cópia: ${CARD_BY_ID[c.copy]?.name}` : c.charges ? `${c.charges} carga(s)` : c.energy ? `${c.energy} energia` : undefined);
 
 function PowerCard({ id, onZoom, small, extra }: { id: string; onZoom: (id: string) => void; small?: boolean; extra?: string }) {
   const c = CARD_BY_ID[id];
@@ -21,6 +24,15 @@ function PowerCard({ id, onZoom, small, extra }: { id: string; onZoom: (id: stri
         {c?.name ?? id}
         {extra ? ` · ${extra}` : ''}
       </span>
+    </button>
+  );
+}
+
+/** Carta em miniatura (mercado e Constantes no assento); no desktop o mercado amplia ao passar o mouse. */
+function MiniCard({ id, onZoom, label }: { id: string; onZoom: (id: string) => void; label?: string }) {
+  return (
+    <button type="button" className="kot-mini" onClick={() => onZoom(id)} title={cardAlt(id)} aria-label={`${label ? `${label}: ` : ''}${cardAlt(id)}`}>
+      <img src={cardSrc(id)} alt="" loading="lazy" />
     </button>
   );
 }
@@ -84,27 +96,101 @@ export default function KingOfTokyoBoard({ game, room, you, act }: BoardProps) {
   const mimicOptions = legal.filter((a): a is Extract<KingOfTokyoAction, { type: 'mimic' }> => a.type === 'mimic' && a.cardId !== null);
   const rayTargets = legal.filter((a): a is Extract<KingOfTokyoAction, { type: 'healRay' }> => a.type === 'healRay' && a.target !== null);
 
+  const buyPhase = myTurn && v.phase === 'buy' && !v.pending;
+  const places = arrangeSeats(
+    v.players.map((p) => p.id),
+    you,
+  );
+  const occupant = (id?: string) => (id ? { monster: v.monsters[id].monster, name: nameOf(id) } : undefined);
+
+  const counters = (id: string) => {
+    const m = v.monsters[id];
+    return (
+      <>
+        <HpFloat hp={m.hp} />
+        <span className={`kot-seat-stats ${m.alive ? '' : 'dead'}`}>
+          <MonsterPortrait monster={m.monster} dead={!m.alive} size={24} />
+          <span title="Vida" aria-label={`Vida ${m.hp} de ${m.maxHp}`}>
+            <FaceIcon face="heart" size={14} /> <strong>{m.hp}</strong>
+          </span>
+          <span title="Pontos de vitória" aria-label={`${m.vp} PV`}>
+            ★ <strong>{m.vp}</strong>
+          </span>
+          <span title="Energia" aria-label={`${m.energy} energia`}>
+            <FaceIcon face="energy" size={14} /> <strong>{m.energy}</strong>
+          </span>
+        </span>
+        {!m.alive && <span>eliminado</span>}
+        {m.poison > 0 && <span className="badge badge-warn">Veneno ×{m.poison}</span>}
+        {m.shrink > 0 && <span className="badge badge-warn">Encolhido ×{m.shrink}</span>}
+        {m.shielded && <span className="badge badge-ok">Asas</span>}
+        {m.cards.length > 0 && (
+          <span className="kot-keeps">
+            {m.cards.map((c, i) => (
+              <MiniCard key={i} id={c.id} onZoom={setZoom} label={cardExtra(c)} />
+            ))}
+          </span>
+        )}
+      </>
+    );
+  };
+
+  const market = v.options.powerCards && (
+    <div className="kot-market" aria-label="Mercado de cartas">
+      {v.market.map((id, i) =>
+        id ? (
+          <MiniCard key={i} id={id} onZoom={setZoom} />
+        ) : (
+          <div key={i} className="kot-mini kot-empty">
+            vazio
+          </div>
+        ),
+      )}
+      {v.deckTop && <MiniCard id={v.deckTop} onZoom={setZoom} label="Topo do baralho" />}
+      <button type="button" className="kot-deck" disabled={!has('sweep')} onClick={() => send({ type: 'sweep' })} title={`Baralho: ${v.deckCount} · descarte: ${v.discard.length}`}>
+        <CardBack />
+        <span className="kot-deck-label">
+          Descartar e repor (2<FaceIcon face="energy" size={12} />)
+        </span>
+      </button>
+    </div>
+  );
+
+  // ações da carta ampliada: comprar do mercado/topo, tomar com Tentáculos, descartar com Metamorfose
+  const zoomActions = zoom
+    ? [
+        buyPhase && v.market.includes(zoom) && (
+          <button key="buy" className="btn btn-primary" disabled={!buyable.has(zoom)} onClick={() => send({ type: 'buy', cardId: zoom })}>
+            Comprar ({CARD_BY_ID[zoom].cost} energia)
+          </button>
+        ),
+        zoom === v.deckTop && (
+          <button key="top" className="btn btn-primary" disabled={!has('buyTop')} onClick={() => send({ type: 'buyTop' })}>
+            Comprar topo ({CARD_BY_ID[zoom].cost} energia)
+          </button>
+        ),
+        ...tentacles
+          .filter((a) => a.cardId === zoom)
+          .map((a) => (
+            <button key={`t-${a.from}`} className="btn" onClick={() => send(a)}>
+              Tomar de {nameOf(a.from!)} ({CARD_BY_ID[zoom].cost} energia)
+            </button>
+          )),
+        metamorph.has(zoom) && me?.cards.some((c) => c.id === zoom) && (
+          <button key="meta" className="btn" onClick={() => send({ type: 'metamorph', cardId: zoom })}>
+            Descartar (+{CARD_BY_ID[zoom].cost} energia)
+          </button>
+        ),
+      ].filter(Boolean)
+    : [];
+  const zoomOwner = zoom ? v.players.find((p) => v.monsters[p.id].cards.some((c) => c.id === zoom)) : undefined;
+  const zoomExtra = zoomOwner ? cardExtra(v.monsters[zoomOwner.id].cards.find((c) => c.id === zoom)!) : undefined;
+
   return (
     <div className="stack kot">
-      <div className="felt kot-tokyo">
-        <div className="kot-place">
-          <span className="small">Cidade de Tóquio</span>
-          {/* trocar o ocupante remonta o bloco: o monstro entra deslizando */}
-          <div key={city?.id ?? 'vazia'} className="kot-slide">
-            {city ? <MonsterPortrait monster={v.monsters[city.id].monster} size={52} /> : <div className="kot-empty">vazia</div>}
-            <strong className="small">{city ? nameOf(city.id) : ''}</strong>
-          </div>
-        </div>
-        {v.bay && (
-          <div className="kot-place">
-            <span className="small">Baía de Tóquio</span>
-            <div key={bay?.id ?? 'vazia'} className="kot-slide">
-              {bay ? <MonsterPortrait monster={v.monsters[bay.id].monster} size={52} /> : <div className="kot-empty">vazia</div>}
-              <strong className="small">{bay ? nameOf(bay.id) : ''}</strong>
-            </div>
-          </div>
-        )}
-      </div>
+      <GameTableLayout game={game} room={room} you={you} places={places} counters={counters} className="kot-table" cornerRight={market}>
+        <TokyoBoard city={occupant(city?.id)} bay={occupant(bay?.id)} showBay={v.bay} />
+      </GameTableLayout>
 
       {v.pending && pendingMine && (
         <div className="card stack kot-window" role="dialog" aria-label="Decisão">
@@ -330,122 +416,27 @@ export default function KingOfTokyoBoard({ game, room, you, act }: BoardProps) {
             Cura Rápida (2 energia: +1 Vida)
           </button>
         )}
-      </div>
-
-      {v.options.powerCards && (
-        <div className="card stack">
-          <div className="row kot-dice-head">
-            <strong>Cartas de Poder</strong>
-            <span className="muted small">
-              baralho {v.deckCount} · descarte {v.discard.length}
-            </span>
+        {buyPhase && (
+          <div className="row">
+            {v.options.powerCards && <span className="muted small grow">Toque numa carta do mercado para comprar.</span>}
+            <button className="btn btn-primary grow" disabled={!has('endTurn')} onClick={() => send({ type: 'endTurn' })}>
+              Encerrar turno
+            </button>
           </div>
-          <div className="kot-market">
-            {v.market.map((id, i) =>
-              id ? (
-                <div key={i} className="kot-market-slot">
-                  <PowerCard id={id} onZoom={setZoom} />
-                  {myTurn && v.phase === 'buy' && !v.pending && (
-                    <button className="btn btn-primary btn-sm" disabled={!buyable.has(id)} onClick={() => send({ type: 'buy', cardId: id })}>
-                      Comprar ({CARD_BY_ID[id].cost})
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div key={i} className="kot-market-slot kot-empty">
-                  vazio
-                </div>
-              ),
-            )}
-            {v.deckTop && (
-              <div className="kot-market-slot">
-                <PowerCard id={v.deckTop} onZoom={setZoom} extra="topo" />
-                <button className="btn btn-primary btn-sm" disabled={!has('buyTop')} onClick={() => send({ type: 'buyTop' })}>
-                  Comprar topo ({CARD_BY_ID[v.deckTop].cost})
-                </button>
-              </div>
-            )}
-          </div>
-          {myTurn && v.phase === 'buy' && !v.pending && (
-            <div className="row">
-              <button className="btn" disabled={!has('sweep')} onClick={() => send({ type: 'sweep' })}>
-                Limpar vitrine (2)
-              </button>
-              <button className="btn btn-primary grow" disabled={!has('endTurn')} onClick={() => send({ type: 'endTurn' })}>
-                Encerrar turno
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="kot-monsters">
-        {v.players.map((p) => {
-          const m = v.monsters[p.id];
-          return (
-            <div key={p.id} className={`card kot-monster ${v.turn === p.id ? 'turn' : ''} ${m.alive ? '' : 'dead'}`}>
-              <HpFloat hp={m.hp} />
-              <div className="row kot-monster-head">
-                <MonsterPortrait monster={m.monster} dead={!m.alive} />
-                <div className="grow">
-                  <span className="row" style={{ gap: 6, flexWrap: 'nowrap' }}>
-                    <SeatAvatar game={game} room={room} id={p.id} size={24} />
-                    <strong>{nameOf(p.id)}</strong>
-                  </span>
-                  <div className="muted small">
-                    {m.monster}
-                    {m.place === 'city' ? ' · Cidade' : m.place === 'bay' ? ' · Baía' : ''}
-                    {!m.alive ? ' · eliminado' : ''}
-                  </div>
-                </div>
-              </div>
-              <div className="kot-stats">
-                <span title="Vida" aria-label={`Vida ${m.hp} de ${m.maxHp}`}>
-                  <FaceIcon face="heart" size={16} /> {m.hp}/{m.maxHp}
-                </span>
-                <span title="Pontos de vitória" aria-label={`${m.vp} PV`}>
-                  ★ {m.vp}
-                </span>
-                <span title="Energia" aria-label={`${m.energy} energia`}>
-                  <FaceIcon face="energy" size={16} /> {m.energy}
-                </span>
-                {m.poison > 0 && <span className="badge badge-warn">Envenenado ×{m.poison}</span>}
-                {m.shrink > 0 && <span className="badge badge-warn">Encolhido ×{m.shrink}</span>}
-                {m.shielded && <span className="badge badge-ok">Asas</span>}
-              </div>
-              {m.cards.length > 0 && (
-                <div className="kot-owned">
-                  {m.cards.map((c, i) => {
-                    const extra = c.copy ? `cópia: ${CARD_BY_ID[c.copy]?.name}` : c.charges ? `${c.charges} carga(s)` : c.energy ? `${c.energy} energia` : undefined;
-                    const tent = tentacles.find((a) => a.from === p.id && a.cardId === c.id);
-                    return (
-                      <div key={i} className="kot-owned-card">
-                        <PowerCard id={c.id} onZoom={setZoom} small extra={extra} />
-                        {tent && (
-                          <button className="btn btn-sm" onClick={() => send(tent)}>
-                            Tomar ({CARD_BY_ID[c.id].cost})
-                          </button>
-                        )}
-                        {p.id === you && metamorph.has(c.id) && (
-                          <button className="btn btn-sm" onClick={() => send({ type: 'metamorph', cardId: c.id })}>
-                            Descartar (+{CARD_BY_ID[c.id].cost})
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
+        )}
       </div>
 
       {zoom && (
         <div className="kot-zoom" role="dialog" aria-label={CARD_BY_ID[zoom]?.name} onClick={() => setZoom(null)}>
           <img src={cardSrc(zoom)} alt={cardAlt(zoom)} />
-          <p className="small">{cardAlt(zoom)}</p>
-          <button className="btn">Fechar</button>
+          <p className="small">
+            {cardAlt(zoom)}
+            {zoomExtra ? ` (${zoomExtra})` : ''}
+          </p>
+          <div className="row kot-zoom-actions">
+            {zoomActions}
+            <button className="btn">Fechar</button>
+          </div>
         </div>
       )}
     </div>
