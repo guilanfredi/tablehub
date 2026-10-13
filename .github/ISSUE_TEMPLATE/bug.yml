@@ -1,7 +1,7 @@
 name: Bug
 description: Algo não funciona. O Desenvolvedor começa automaticamente.
 title: "Bug: "
-labels: ["fase:dev"]
+labels: ["fase:dev", "tipo:bug"]
 body:
   - type: textarea
     id: oque

@@ -5,3 +5,6 @@ Instruções do TableHub para o modo automático:
 - Permissões: comandos fora da lista de `.agents/roles/<função>.json` são negados sem perguntar. Prefira um comando simples por chamada
   (sem laços `for`/`while` nem `;` encadeando vários); para filtrar saída use `grep`/`head`/`tail`; para repetir testes, rode o comando de novo.
 - Arquivos temporários de investigação (testes de estresse, logs): apague com `rm <arquivo>` antes de commitar e confira `git status`.
+- Economia de contexto (cada turno relê tudo o que já entrou na conversa): prefira saídas curtas, como
+  `npx vitest run --reporter=dot` e `npx playwright test --reporter=line`; filtre logs com `grep`/`tail`; leia só o trecho
+  necessário de arquivos grandes (offset/limit) em vez do arquivo inteiro.

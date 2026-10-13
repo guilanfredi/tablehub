@@ -1,7 +1,7 @@
 name: Melhoria
 description: Mudança pequena e clara (que não seja um jogo novo). O Desenvolvedor começa automaticamente. Se houver decisões a tomar, use "Melhoria com especificação".
 title: "Melhoria: "
-labels: ["fase:dev"]
+labels: ["fase:dev", "tipo:melhoria"]
 body:
   - type: textarea
     id: oque
