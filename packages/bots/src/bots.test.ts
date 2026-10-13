@@ -11,10 +11,10 @@ const svc = new RoomService(GAMES, BOTS);
 /** Um humano (que joga a primeira ação legal) contra bots, até o fim da partida. */
 function playWithBots(gameId: string, bots: number, options: GameOptions, seed: number) {
   const room = createRoom('ABCDE', 0);
-  svc.join(room, 'h', 'Humano', 0);
+  svc.join(room, 'h', 'Humano', undefined, 0);
   svc.setGame(room, 'h', gameId);
   svc.setOptions(room, 'h', options);
-  for (let i = 0; i < bots; i++) expect(svc.addBot(room, 'h', 0).ok).toBe(true);
+  for (let i = 0; i < bots; i++) expect(svc.addBot(room, 'h', 0, seed + i).ok).toBe(true);
   expect(svc.start(room, 'h', seed, 0)).toEqual({ ok: true });
   let steps = 0;
   while (room.status === 'playing' && steps++ < 20_000) {

@@ -404,8 +404,16 @@ a {
   min-height: 48px;
 }
 
+@media (max-width: 600px) {
+  .player-item {
+    gap: 6px;
+    padding: 8px;
+  }
+}
+
 .player-item .name {
   flex: 1;
+  min-width: 0;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;

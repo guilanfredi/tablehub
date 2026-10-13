@@ -1,7 +1,7 @@
 name: Melhoria com especificação
 description: Mudança grande ou com decisões a tomar. O Analista escreve a especificação antes do Desenvolvedor começar.
 title: "Melhoria: "
-labels: ["fase:spec"]
+labels: ["fase:spec", "tipo:melhoria-especificada"]
 body:
   - type: textarea
     id: oque

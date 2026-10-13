@@ -3,6 +3,7 @@ import { Link, Route, Routes } from 'react-router-dom';
 import { Home } from './pages/Home';
 import { RoomPage } from './pages/RoomPage';
 import { useSoundPref } from './lib/sounds';
+import { useNotifyPref } from './lib/turnAlert';
 import { useRoom } from './store/room';
 
 function Toast() {
@@ -41,6 +42,26 @@ function SoundToggle() {
   );
 }
 
+function NotifyToggle() {
+  const { enabled, permission, toggle } = useNotifyPref();
+  const denied = permission === 'denied';
+  const on = enabled && permission === 'granted';
+  const label = denied ? 'Notificações bloqueadas' : on ? 'Desativar aviso de vez' : 'Avisar quando for minha vez';
+  async function onClick() {
+    const msg = await toggle();
+    if (msg) useRoom.setState({ toast: { id: Date.now(), text: msg } });
+  }
+  return (
+    <button type="button" className={`btn btn-ghost btn-sm sound-toggle ${on ? '' : 'off'}`} onClick={onClick} aria-label={label} aria-pressed={on} title={label}>
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4l2-2z" fill={on ? 'currentColor' : 'none'} />
+        <path d="M10 20.5a2 2 0 0 0 4 0" />
+        {(denied || !on) && <path d="M3.5 3.5l17 17" />}
+      </svg>
+    </button>
+  );
+}
+
 export function App() {
   return (
     <div className="app">
@@ -49,7 +70,10 @@ export function App() {
           <img src="/favicon.svg" alt="" />
           TableHub
         </Link>
-        <SoundToggle />
+        <span className="row" style={{ gap: 2, flexWrap: 'nowrap' }}>
+          <NotifyToggle />
+          <SoundToggle />
+        </span>
       </header>
       <Routes>
         <Route path="/" element={<Home />} />

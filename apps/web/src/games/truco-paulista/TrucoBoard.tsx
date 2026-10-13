@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BET_NAMES, type Card, type TrucoAction, type TrucoView } from '@tablehub/games/truco-paulista/engine';
+import { SeatAvatar } from '../../components/avatars/SeatAvatar';
 import type { BoardProps } from '../registry';
 import './truco.css';
 
@@ -20,7 +21,7 @@ export function PlayingCard({ card, manilha, small, back }: { card?: Card | null
   );
 }
 
-export default function TrucoBoard({ game, you, act }: BoardProps) {
+export default function TrucoBoard({ game, room, you, act }: BoardProps) {
   const v = game.view as TrucoView;
   const legal = game.legal as TrucoAction[];
   const [faceDown, setFaceDown] = useState(false);
@@ -73,6 +74,7 @@ export default function TrucoBoard({ game, you, act }: BoardProps) {
             const play = v.current.find((c) => c.playerId === p.id);
             return (
               <div key={p.id} className={`truco-seat pos${i} ${v.turn === p.id ? 'turn' : ''}`}>
+                <SeatAvatar game={game} room={room} id={p.id} size={30} />
                 <div className="seat-name">
                   {nameOf(p.id)}
                   {p.id === v.dealer && <span title="Deu as cartas"> · deu</span>}

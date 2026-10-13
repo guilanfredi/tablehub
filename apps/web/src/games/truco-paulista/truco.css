@@ -135,6 +135,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.truco-seat .thinking {
+  color: rgb(255 255 255 / 0.85);
+}
 .truco-seat.turn .seat-name {
   background: #f2c14e;
   color: #2a2110;

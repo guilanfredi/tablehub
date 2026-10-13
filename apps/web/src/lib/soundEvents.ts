@@ -25,6 +25,16 @@ export function roomSounds(prev: RoomView | null, next: RoomView, you: string | 
   return out;
 }
 
+/**
+ * A vez acabou de chegar a mim? Falso no primeiro estado da partida, em estado repetido, no fim da partida
+ * e para espectadores (que nunca estão em `currentPlayers`).
+ */
+export function becameMyTurn(prev: GameSnapshot | null, next: GameSnapshot, you: string | null): boolean {
+  if (!prev || you === null || prev.gameId !== next.gameId || next.seq <= prev.seq) return false;
+  if (next.status.phase !== 'playing') return false;
+  return next.status.currentPlayers.includes(you) && !prev.status.currentPlayers.includes(you);
+}
+
 /** Sons disparados por um novo estado de jogo. O primeiro estado da partida não toca nada (o início já tem som próprio). */
 export function gameSounds(prev: GameSnapshot | null, next: GameSnapshot, you: string | null): SoundId[] {
   if (!prev || prev.gameId !== next.gameId || next.seq <= prev.seq) return [];
@@ -32,7 +42,5 @@ export function gameSounds(prev: GameSnapshot | null, next: GameSnapshot, you: s
     if (prev.status.phase === 'finished') return [];
     return [you && next.status.winners?.includes(you) ? 'win' : 'end'];
   }
-  const myTurn = you !== null && next.status.currentPlayers.includes(you);
-  const wasMyTurn = you !== null && prev.status.currentPlayers.includes(you);
-  return [myTurn && !wasMyTurn ? 'turn' : 'move'];
+  return [becameMyTurn(prev, next, you) ? 'turn' : 'move'];
 }

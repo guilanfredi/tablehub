@@ -1,7 +1,7 @@
 name: Novo jogo
 description: Pedir um jogo novo. O Analista começa automaticamente.
 title: "Novo jogo: "
-labels: ["fase:spec"]
+labels: ["fase:spec", "tipo:jogo"]
 body:
   - type: input
     id: jogo
