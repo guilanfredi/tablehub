@@ -1,0 +1,43 @@
+/* TableHub — gerado de docs/design-system/tokens.json. Não edite à mão: mude o tokens.json e regenere. */
+:root {
+  color-scheme: dark;
+  --bg: #1A1614;
+  --surface: #241F1C;
+  --surface-raised: #2E2824;
+  --line: #3A322C;
+  --line-strong: #7A6C60;
+  --ink: #F5EDE3;
+  --ink-muted: #B3A79A;
+  --primary: #F2A93B;
+  --primary-soft: #3A2C17;
+  --on-primary: #1A1614;
+  --accent: #FF6B5A;
+  --accent-soft: #3D211C;
+  --support: #3FC1A5;
+  --support-soft: #17332C;
+  --info: #8FB8FF;
+  --table: #3B2B21;
+  --table-edge: #2A1F18;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
+  --shadow-press: 0 4px 0 #8A5A17;
+  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --font-display: "Fredoka", "Nunito", system-ui, sans-serif;
+  --font-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.text-display { font-family: var(--font-display); font-size: 48px; line-height: 52px; font-weight: 600; letter-spacing: -0.01em; }
+.text-heading-1 { font-family: var(--font-display); font-size: 32px; line-height: 38px; font-weight: 600; }
+.text-heading-2 { font-family: var(--font-display); font-size: 24px; line-height: 30px; font-weight: 600; }
+.text-heading-3 { font-family: var(--font-display); font-size: 19px; line-height: 26px; font-weight: 600; }
+.text-table-code { font-family: var(--font-display); font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: 0.2em; }
+.text-body { font-family: var(--font-body); font-size: 16px; line-height: 23px; font-weight: 400; }
+.text-body-strong { font-family: var(--font-body); font-size: 16px; line-height: 23px; font-weight: 700; }
+.text-small { font-family: var(--font-body); font-size: 14px; line-height: 20px; font-weight: 400; }
+.text-overline { font-family: var(--font-body); font-size: 12px; line-height: 16px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }

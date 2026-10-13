@@ -25,6 +25,10 @@ jobs:
       - run: npm ci
       - name: Verificação de tipos
         run: npm run typecheck
+      - name: Design system
+        run: node scripts/check-design-system.mjs
+      - name: Tokens
+        run: node scripts/gen-tokens.mjs --check
       - name: Testes (inclui a bateria de conformidade de todos os jogos)
         run: npm test
       - name: Build

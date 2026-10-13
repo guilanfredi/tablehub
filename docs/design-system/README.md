@@ -69,11 +69,7 @@ Regras:
 - **Fredoka** (títulos, 600): arredondada, lembra peças e fichas. Use com moderação, só em títulos, nome da marca e números grandes de placar.
 - **Nunito** (texto, 400 e 700): leitura confortável, também arredondada, conversa com a Fredoka.
 
-As duas vêm do Google Fonts:
-
-```html
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
-```
+As duas são hospedadas no próprio app via `@fontsource/fredoka` e `@fontsource/nunito` (importadas em `apps/web/src/main.tsx`, só o subconjunto latino e os pesos usados), sem Google Fonts: funcionam offline no PWA. Sem a fonte, o texto cai em `system-ui`.
 
 Escala: `display` 48, `heading-1` 32, `heading-2` 24, `heading-3` 19, `table-code` 28 (código da mesa), `body` 16, `body-strong` 16, `small` 14, `overline` 12 (caixa-alta, selos). Placar, log e contagens usam números tabulares (`font-variant-numeric: tabular-nums`).
 
