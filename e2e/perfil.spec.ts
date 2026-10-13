@@ -124,8 +124,14 @@ test('aviso de vez: com a aba em segundo plano, título pisca e notificação sa
   await startGame(ana);
   await ana.evaluate(() => ((window as unknown as { __hidden: boolean }).__hidden = true));
   const myTurn = ana.locator('.status-pill.my-turn');
-  // se a partida começa com a Ana, ela joga para a vez passar ao bot e voltar
-  if (await myTurn.isVisible().catch(() => false)) await playOne(ana);
+  const thinking = ana.locator('.thinking');
+  // a primeira mensagem da partida não avisa: se a Ana começa, ela joga até a vez passar ao bot
+  await expect(myTurn.or(thinking)).toBeVisible();
+  for (let i = 0; i < 20 && !(await thinking.isVisible()); i++) {
+    if (await myTurn.isVisible()) await playOne(ana);
+    await ana.waitForTimeout(300);
+  }
+  await expect(thinking).toBeVisible();
   await expect(myTurn).toBeVisible({ timeout: 30_000 });
   await expect.poll(() => ana.evaluate(() => (window as unknown as { __notes: string[] }).__notes)).toContain('Sua vez em Dominó');
   const titles = new Set<string>();
