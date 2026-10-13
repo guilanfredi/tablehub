@@ -10,9 +10,23 @@ Aqui no TableHub fica só o que é do projeto, em `.agents/`. O despachante lê 
 
 | Arquivo | O que define |
 |---|---|
-| `.agents/config.json` | repositório, dono, bot, etiquetas, funções (fase, tempo máximo, só-PR), pasta dos worktrees (`../TableHub-agents`), `npm ci` quando o lockfile muda, portas |
+| `.agents/config.json` | repositório, dono, bot, etiquetas (inclusive a de "pronto", usada pelo relatório), funções (fase, tempo máximo, só-PR, **modelo e esforço**), pasta dos worktrees (`../TableHub-agents`), `npm ci` quando o lockfile muda, portas |
 | `.agents/roles/<função>.json` | permissões do Claude Code de cada função (no modo automático, o que não está liberado é negado; quem edita roda em `acceptEdits`): todas negam merge, force-push, push na `main`, segredos, `gh auth` (exceto `status`), deploy e acesso à web; o Revisor não tem `Edit`/`Write` nem `git commit`/`git push` |
 | `.agents/prompt.md` | instruções do TableHub para o modo automático (Playwright, portas, manuais) |
+
+## Modelo e esforço por função
+Para gastar menos cota, cada função usa o modelo e o esforço que o trabalho pede (`.agents/config.json`):
+
+| Função | Modelo | Esforço | Por quê |
+|---|---|---|---|
+| Analista | Opus 5.5 | padrão | erro na especificação contamina todo o resto |
+| Dev | Opus 5.5; **Sonnet 5.5** em issues `tipo:bug`/`tipo:melhoria` | padrão | jogo novo e melhoria especificada pedem o modelo mais forte; correção e melhoria simples, não |
+| QA | Sonnet 5.5 | médio | trabalho mais mecânico (Playwright, e2e) com muitos turnos |
+| Revisor | Opus 5.5 | médio | última barreira antes da aprovação; cada revisão custa pouco |
+
+- Os modelos de issue aplicam `tipo:jogo`, `tipo:bug`, `tipo:melhoria` ou `tipo:melhoria-especificada`. Num PR, vale o tipo
+  da issue que ele fecha (`Closes #N`). Sem tipo, vale o padrão da função.
+- Para comparar antes/depois: `npm run relatorio` (no repositório da automação) mostra custo por função, por modelo e por tarefa.
 
 ## Portas por instância
 Para várias instâncias rodarem juntas, as portas vêm do ambiente (padrão entre parênteses):
