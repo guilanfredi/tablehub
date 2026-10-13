@@ -13,9 +13,26 @@ test('king of tokyo: rolar, guardar, resolver, ver a vitrine e passar a vez', as
   await startGame(ana);
 
   const current = await whoseTurn([ana, beto]);
-  await expect(current.getByText('Cidade de Tóquio')).toBeVisible();
+  await expect(current.locator('.kot-board').getByText('Tóquio Cidade')).toBeVisible();
+  await expect(current.locator('.kot-board').getByText('Tóquio Baía')).toHaveCount(0);
+  await expect(current.locator('.kot-table .gt-seat')).toHaveCount(2);
+  await expect(current.locator('.gt-seat [aria-label="Vida 10 de 10"]')).toHaveCount(2);
   await expect(current.locator('.kot-market img')).toHaveCount(3);
   await expect(current.locator('.kot-market img').first()).toHaveJSProperty('complete', true);
+  await expect(current.getByRole('button', { name: /Descartar e repor/ })).toBeDisabled();
+  const over = await current.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(over).toBeLessThanOrEqual(1);
+
+  // desktop: passar o mouse amplia a miniatura sem mexer no layout
+  const mini = current.locator('.kot-market .kot-mini').first();
+  if (await current.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches)) {
+    const box = await mini.boundingBox();
+    const imgBefore = (await mini.locator('img').boundingBox())!;
+    await mini.hover();
+    await expect.poll(async () => (await mini.locator('img').boundingBox())!.width).toBeGreaterThan(imgBefore.width * 2);
+    expect(await mini.boundingBox()).toEqual(box);
+    await current.mouse.move(0, 0);
+  }
 
   await current.getByRole('button', { name: 'Rolar dados' }).click();
   await expect(current.locator('.kot-dice .kot-die')).toHaveCount(6);
@@ -24,10 +41,12 @@ test('king of tokyo: rolar, guardar, resolver, ver a vitrine e passar a vez', as
   await current.getByRole('button', { name: 'Parar e resolver' }).click();
 
   // ninguém em Tóquio: o jogador da vez entra na Cidade
-  await expect(current.locator('.kot-tokyo .kot-portrait')).toHaveCount(1);
-  await current.locator('.kot-market .kot-card').first().click();
+  await expect(current.locator('.kot-board .kot-portrait')).toHaveCount(1);
+  // tocar na miniatura abre a carta grande, com o botão de comprar
+  await mini.click();
   await expect(current.locator('.kot-zoom img')).toBeVisible();
-  await current.locator('.kot-zoom').click();
+  await expect(current.locator('.kot-zoom').getByRole('button', { name: /^Comprar/ })).toBeVisible();
+  await current.locator('.kot-zoom').getByRole('button', { name: 'Fechar' }).click();
   await current.getByRole('button', { name: 'Encerrar turno' }).click();
 
   const other = current === ana ? beto : ana;

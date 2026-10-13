@@ -1,32 +1,145 @@
-.kot-tokyo {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-  padding: 12px;
-  color: var(--ink);
+/* Tabuleiro de Tóquio no centro da mesa */
+.kot-board {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  border-radius: var(--radius-md);
 }
-.kot-place {
+.kot-slide {
+  animation: kot-slide-in 300ms ease-out;
+}
+
+/* Assentos: monstro, vida, pontos, energia e Constantes */
+.kot-table .gt-seat {
+  position: relative;
+}
+.kot-seat-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.kot-seat-stats > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+/* celular: oponentes em coluna na faixa, para caber vida/pontos/energia de até 5 */
+.gt-compact.kot-table .gt-strip .gt-seat {
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 4px;
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+.gt-compact.kot-table .gt-strip .gt-seat-body {
+  align-items: center;
+  max-width: 100%;
+}
+.gt-compact.kot-table .gt-strip .gt-counters {
+  justify-content: center;
+}
+.gt-compact.kot-table .gt-strip .kot-seat-stats {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+.gt-compact.kot-table .gt-strip .kot-seat-stats .kot-portrait {
+  width: 18px;
+  height: 18px;
+}
+.kot-seat-stats.dead {
+  opacity: 0.6;
+}
+.kot-keeps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.kot-keeps .kot-mini {
+  width: 22px;
+}
+
+/* Mercado no canto: 3 miniaturas + verso do baralho */
+.kot-market {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+.kot-mini {
+  position: relative;
+  flex: none;
+  width: 52px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: zoom-in;
+}
+.kot-mini img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 512 / 712;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-float);
+  background: var(--surface-raised);
+}
+.kot-mini.kot-empty {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 512 / 712;
+  border: 2px dashed var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+@media (hover: hover) and (pointer: fine) {
+  /* amplia flutuando por cima, sem deslocar o layout */
+  .kot-market .kot-mini img {
+    transform-origin: top right;
+    transition: transform 150ms ease-out;
+  }
+  .kot-market .kot-mini:hover,
+  .kot-market .kot-mini:focus-visible {
+    z-index: 20;
+  }
+  .kot-market .kot-mini:hover img,
+  .kot-market .kot-mini:focus-visible img {
+    transform: scale(2.5);
+  }
+}
+.kot-deck {
+  flex: none;
+  width: 60px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ink);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  min-width: 110px;
+  gap: 2px;
+  cursor: pointer;
 }
-.kot-empty {
-  display: grid;
-  place-items: center;
+.kot-deck:disabled {
+  cursor: default;
+}
+.kot-deck:disabled .kot-back {
+  opacity: 0.7;
+}
+.kot-back {
+  display: block;
   width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  border: 2px dashed currentColor;
-  opacity: 0.6;
-  font-size: 0.75rem;
-}
-.kot-market-slot.kot-empty {
-  width: auto;
-  height: auto;
-  min-height: 120px;
   border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-float);
+}
+.kot-deck-label {
+  font-size: 11px;
+  line-height: 1.15;
+  text-align: center;
+}
+.kot-zoom-actions {
+  justify-content: center;
 }
 .kot-dice-head {
   justify-content: space-between;
@@ -60,17 +173,6 @@
   cursor: default;
   opacity: 0.95;
 }
-.kot-market {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-.kot-market-slot {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: stretch;
-}
 .kot-card {
   padding: 0;
   border: none;
@@ -98,57 +200,11 @@
   text-align: center;
   margin-top: 2px;
 }
-.kot-monsters {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
-  gap: 8px;
-}
-.kot-monster {
-  padding: 10px;
-}
-.kot-monster.turn {
-  box-shadow: 0 0 0 2px var(--primary), var(--shadow-float);
-}
-.kot-monster.dead {
-  opacity: 0.55;
-}
-.kot-monster-head {
-  gap: 8px;
-  flex-wrap: nowrap;
-}
-.kot-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  margin-top: 6px;
-  font-weight: 600;
-}
-.kot-stats > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-.kot-owned {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-.kot-owned-card {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 70px;
-}
 .kot-window {
   border: 2px solid var(--accent);
 }
 .kot-window .kot-card img {
   width: 140px;
-}
-.kot-monster {
-  position: relative;
 }
 /* dano/cura flutuando sobre o monstro */
 .kot-float {
@@ -172,13 +228,6 @@
 }
 .kot-die.shake {
   animation: kot-shake 350ms ease-in-out;
-}
-.kot-slide {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  animation: kot-slide-in 300ms ease-out;
 }
 @keyframes kot-float-up {
   0% {
