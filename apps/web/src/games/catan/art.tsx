@@ -13,6 +13,18 @@ export const TERRAIN_FILL: Record<Terrain, string> = {
   desert: '#e3d3a4',
 };
 
+/** Cores do tabuleiro: borda dos hexes, fichas de número, portos e estradas. */
+export const BOARD_ART = {
+  hexStroke: '#f3ead2',
+  token: '#f8f1dc',
+  tokenStroke: '#6b5a34',
+  hotPip: '#b3342f',
+  pip: '#3a3122',
+  portLine: '#d9c9a0',
+  roadOutline: '#1b1b1b',
+  unknownPlayer: '#999',
+};
+
 export const RESOURCE_COLOR: Record<Resource, string> = {
   lumber: '#2f7a3a',
   wool: '#8cc663',

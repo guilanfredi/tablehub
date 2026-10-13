@@ -4,7 +4,7 @@ import { COSTS, DEV_LABEL, type CatanAction, type CatanView, type DevType, type 
 import { SeatAvatar } from '../../components/avatars/SeatAvatar';
 import { PanZoom } from '../../components/board/PanZoom';
 import type { BoardProps } from '../registry';
-import { CityShape, ResourceGlyph, RESOURCE_COLOR, RobberShape, SettlementShape, TERRAIN_FILL, TerrainGlyph } from './art';
+import { BOARD_ART, CityShape, ResourceGlyph, RESOURCE_COLOR, RobberShape, SettlementShape, TERRAIN_FILL, TerrainGlyph } from './art';
 import './catan.css';
 
 const S = 60; // tamanho do hexágono em unidades do SVG
@@ -59,7 +59,7 @@ export default function CatanBoard({ game, room, you, act }: BoardProps) {
   const g = catanGraph();
   const [mode, setMode] = useState<Mode>(null);
   const [panel, setPanel] = useState<'bank' | 'players' | null>(null);
-  const colorOf = (pid: string) => v.players.find((p) => p.id === pid)?.color ?? '#999';
+  const colorOf = (pid: string) => v.players.find((p) => p.id === pid)?.color ?? BOARD_ART.unknownPlayer;
   const nameOf = (pid: string) => (pid === you ? 'Você' : (v.players.find((p) => p.id === pid)?.name ?? pid));
   const myTurn = v.current === you;
 
@@ -141,19 +141,19 @@ export default function CatanBoard({ game, room, you, act }: BoardProps) {
               const target = targets.hexes.get(id);
               return (
                 <g key={id} className={target ? 'hit hit-hex' : ''} onClick={target ? () => doAct(target) : undefined}>
-                  <polygon points={pts} fill={TERRAIN_FILL[h.terrain]} stroke="#f3ead2" strokeWidth={3} />
+                  <polygon points={pts} fill={TERRAIN_FILL[h.terrain]} stroke={BOARD_ART.hexStroke} strokeWidth={3} />
                   <g transform={`translate(${cell.x * S} ${cell.y * S - 22}) scale(1.3)`} opacity={0.9}>
                     <TerrainGlyph t={h.terrain} />
                   </g>
                   {h.number !== null && (
                     <g transform={`translate(${cell.x * S} ${cell.y * S + 14})`}>
-                      <circle r={15} fill="#f8f1dc" stroke="#6b5a34" strokeWidth={1.2} />
+                      <circle r={15} fill={BOARD_ART.token} stroke={BOARD_ART.tokenStroke} strokeWidth={1.2} />
                       <text textAnchor="middle" dy={4} className={`num ${h.number === 6 || h.number === 8 ? 'red' : ''}`}>
                         {h.number}
                       </text>
                       <g transform="translate(0 9)">
                         {Array.from({ length: PIPS[h.number] }, (_, i) => (
-                          <circle key={i} cx={(i - (PIPS[h.number!] - 1) / 2) * 3.4} r={1.2} fill={h.number === 6 || h.number === 8 ? '#b3342f' : '#3a3122'} />
+                          <circle key={i} cx={(i - (PIPS[h.number!] - 1) / 2) * 3.4} r={1.2} fill={h.number === 6 || h.number === 8 ? BOARD_ART.hotPip : BOARD_ART.pip} />
                         ))}
                       </g>
                     </g>
@@ -177,9 +177,9 @@ export default function CatanBoard({ game, room, you, act }: BoardProps) {
               const py = my + (dy / len) * 26;
               return (
                 <g key={port.edge}>
-                  <line x1={a.x * S} y1={a.y * S} x2={px} y2={py} stroke="#d9c9a0" strokeWidth={3} />
-                  <line x1={b.x * S} y1={b.y * S} x2={px} y2={py} stroke="#d9c9a0" strokeWidth={3} />
-                  <circle cx={px} cy={py} r={14} fill="#f8f1dc" stroke="#6b5a34" strokeWidth={1.2} />
+                  <line x1={a.x * S} y1={a.y * S} x2={px} y2={py} stroke={BOARD_ART.portLine} strokeWidth={3} />
+                  <line x1={b.x * S} y1={b.y * S} x2={px} y2={py} stroke={BOARD_ART.portLine} strokeWidth={3} />
+                  <circle cx={px} cy={py} r={14} fill={BOARD_ART.token} stroke={BOARD_ART.tokenStroke} strokeWidth={1.2} />
                   {port.type === 'any' ? (
                     <text x={px} y={py + 4} textAnchor="middle" className="port-label">
                       3:1
@@ -201,7 +201,7 @@ export default function CatanBoard({ game, room, you, act }: BoardProps) {
               const [a, b] = g.edges[eid].vertices.map((vid) => g.vertices[vid]);
               return (
                 <g key={eid}>
-                  <line x1={a.x * S} y1={a.y * S} x2={b.x * S} y2={b.y * S} stroke="#1b1b1b" strokeWidth={10} strokeLinecap="round" />
+                  <line x1={a.x * S} y1={a.y * S} x2={b.x * S} y2={b.y * S} stroke={BOARD_ART.roadOutline} strokeWidth={10} strokeLinecap="round" />
                   <line x1={a.x * S} y1={a.y * S} x2={b.x * S} y2={b.y * S} stroke={colorOf(owner)} strokeWidth={6.5} strokeLinecap="round" />
                 </g>
               );

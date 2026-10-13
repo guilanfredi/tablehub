@@ -2,10 +2,10 @@
   width: 64px;
   height: 92px;
   border-radius: 8px;
-  background: #fffdf7;
-  color: #1d1a16;
-  border: 1px solid #c9c1b0;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 0.25);
+  background: #fffdf7; /* design-system-ignore: arte da carta */
+  color: #1d1a16; /* design-system-ignore: arte da carta */
+  border: 1px solid #c9c1b0; /* design-system-ignore: arte da carta */
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.25); /* design-system-ignore: arte da carta */
   position: relative;
   display: grid;
   place-items: center;
@@ -18,10 +18,10 @@
   font-size: 0.8rem;
 }
 .pcard.red {
-  color: #c0322b;
+  color: #c0322b; /* design-system-ignore: arte da carta */
 }
 .pcard.manilha {
-  box-shadow: 0 0 0 3px #f2c14e, 0 2px 6px rgb(0 0 0 / 0.25);
+  box-shadow: 0 0 0 3px var(--primary), 0 2px 6px rgb(0 0 0 / 0.25); /* design-system-ignore: arte da carta */
 }
 .pcard .corner {
   position: absolute;
@@ -38,12 +38,12 @@
   font-size: 1.3em;
 }
 .pcard.back {
-  background: repeating-linear-gradient(45deg, #7a2f2f 0 6px, #8f3a3a 6px 12px);
-  border-color: #5a2222;
+  background: repeating-linear-gradient(45deg, #7a2f2f 0 6px, #8f3a3a 6px 12px); /* design-system-ignore: arte da carta */
+  border-color: #5a2222; /* design-system-ignore: arte da carta */
 }
 .pcard.placeholder {
   background: transparent;
-  border: 2px dashed rgb(255 255 255 / 0.25);
+  border: 2px dashed var(--line-strong);
   box-shadow: none;
 }
 
@@ -129,18 +129,18 @@
   font-size: 0.8rem;
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgb(0 0 0 / 0.2);
+  background: var(--table-edge);
   white-space: nowrap;
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .truco-seat .thinking {
-  color: rgb(255 255 255 / 0.85);
+  color: var(--ink-muted);
 }
 .truco-seat.turn .seat-name {
-  background: #f2c14e;
-  color: #2a2110;
+  background: var(--primary);
+  color: var(--on-primary);
   font-weight: 700;
 }
 
@@ -155,17 +155,19 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: rgb(0 0 0 / 0.2);
+  background: var(--table-edge);
   font-weight: 800;
 }
 .trick.won {
-  background: #3fae84;
+  background: var(--support);
+  color: var(--on-primary);
 }
 .trick.lost {
-  background: #b3342f;
+  background: var(--accent);
+  color: var(--on-primary);
 }
 .trick.tie {
-  background: #8a8170;
+  background: var(--surface-raised);
 }
 .truco-last {
   text-align: center;
@@ -173,7 +175,7 @@
 }
 
 .truco-call {
-  border-color: var(--warn);
+  border-color: var(--accent);
 }
 
 .truco-hand {
