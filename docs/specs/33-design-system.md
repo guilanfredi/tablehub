@@ -49,7 +49,7 @@ O que o jogador vê, em todas as telas (Home, entrada pelo código, Lobby, mesa 
 | Voltar à sala | Voltar à mesa |
 | `<meta name="description">` "Crie uma sala e jogue…" | "Abra uma mesa e jogue…" |
 
-   Mensagens que o **servidor** manda e o jogador vê também mudam (ver Dúvida 3): "Sala não encontrada." → "Mesa não encontrada. Confira o código.", "Sala expirada." → "Mesa expirada.", "Não foi possível criar a sala, tente de novo." → "Não foi possível abrir a mesa, tente de novo.".
+   Mensagens que o **servidor** manda e o jogador vê também mudam (decisão 3): "Sala não encontrada." → "Mesa não encontrada. Confira o código.", "Sala expirada." → "Mesa expirada.", "Não foi possível criar a sala, tente de novo." → "Não foi possível abrir a mesa, tente de novo.".
    **Não mudam:** a rota `/sala/:código` (links já compartilhados continuam valendo), nomes no código (`room`, `RoomPage`…), o protocolo, comentários e documentação interna. "Dono" continua "Dono" (o README do design system usa esse selo).
    Sem emoji na interface (hoje não há; continuar assim).
 
@@ -58,7 +58,8 @@ Só `apps/web`, `scripts/`, `.github/`, `CLAUDE.md`, `.claude/skills/` e as mens
 
 ### 1. Base (`apps/web`)
 - Copiar `tokens.css` e `components.css` (tabela acima). Em `main.tsx`, importar `./design-system/tokens.css` e `./design-system/components.css` no lugar de `./styles.css`; apagar `styles.css`. `components.css` mantém todos os nomes de classe de `styles.css` (conferido: é um superconjunto; acrescenta `badge-primary`, `seat-2..4`, `seat-empty`, `table-top`, `panzoom-controls`).
-- `index.html`: `theme-color` = `#1A1614`; descrição com "mesa"; fontes conforme a Dúvida 2.
+- `index.html`: `theme-color` = `#1A1614`; descrição com "mesa"; **sem** `<link>` do Google Fonts (decisão 2).
+- Fontes hospedadas no app: dependências `@fontsource/fredoka` e `@fontsource/nunito`, só os pesos que `tokens.css`/`components.css` usam, importadas em `main.tsx` antes de `tokens.css`. O service worker do PWA já guarda os assets do build, então as fontes funcionam offline. Licença OFL.
 - `vite.config.ts` (manifesto do PWA): `theme_color` e `background_color` = `#1A1614` (a tela de abertura do app instalado fica escura).
 - Barra superior (`App.tsx`): logo `tablehub-mark.svg` + nome na classe `brand`. O SVG precisa estar em `apps/web/public/` (ou importado como asset) para ser servido; copiar sem alterar de `docs/design-system/logos/`.
 
@@ -86,17 +87,17 @@ Hoje há cores literais em `catan.css`, `CatanBoard.tsx`, `domino.css`, `king-of
 - Mudança só visual: nenhuma regra de jogo, interação ou `data-*` usado nos e2e muda.
 
 ### 4. Textos
-Trocas da tabela acima em `Home.tsx`, `RoomPage.tsx`, `Lobby.tsx`, `GameTable.tsx`, `store/room.ts`, `lib/api.ts`, `index.html` e, conforme a Dúvida 3, `apps/worker/src/index.ts` e `room-do.ts` (só o texto; códigos de fechamento 4404/4410 iguais). Atualizar os e2e que procuram esses textos (`e2e/helpers.ts` "Criar sala"; `bots.spec.ts` e `king-of-tokyo-qa.spec.ts` "Voltar à sala") e testes do worker/smoke que comparem a mensagem, se houver.
+Trocas da tabela acima em `Home.tsx`, `RoomPage.tsx`, `Lobby.tsx`, `GameTable.tsx`, `store/room.ts`, `lib/api.ts`, `index.html` e também (decisão 3) `apps/worker/src/index.ts` e `room-do.ts` (só o texto; códigos de fechamento 4404/4410 iguais). Atualizar os e2e que procuram esses textos (`e2e/helpers.ts` "Criar sala"; `bots.spec.ts` e `king-of-tokyo-qa.spec.ts` "Voltar à sala") e testes do worker/smoke que comparem a mensagem, se houver.
 
 ### 5. Logo e ícones
 - `favicon.svg` do zip.
-- Reescrever `scripts/gen-icons.mjs` para gerar `icon-192.png`, `icon-512.png`, `icon-maskable-512.png` e `apple-touch-icon.png` a partir de `docs/design-system/logos/tablehub-app-icon.svg` (conforme a Dúvida 4). O maskable e o apple-touch são de fundo cheio (`#1A1614`, sem cantos transparentes) com o leque dentro da zona segura central (~80%). Os PNGs gerados são commitados.
+- Reescrever `scripts/gen-icons.mjs` para gerar `icon-192.png`, `icon-512.png`, `icon-maskable-512.png` e `apple-touch-icon.png` a partir de `docs/design-system/logos/tablehub-app-icon.svg` renderizado com a devDependency `@resvg/resvg-js` (decisão 4); o script só roda à mão (`node scripts/gen-icons.mjs`), não no build nem no CI. O maskable e o apple-touch são de fundo cheio (`#1A1614`, sem cantos transparentes) com o leque dentro da zona segura central (~80%). Os PNGs gerados são commitados.
 
 ### 6. Script de verificação e CI
 - `scripts/check-design-system.mjs` do zip tem um defeito no Windows: `new URL('..', import.meta.url).pathname` vira `/D:/...` e o `readdirSync` falha. Trocar por `fileURLToPath(new URL('..', import.meta.url))`. De resto, igual ao zip.
 - Acrescentar `"check:ds": "node scripts/check-design-system.mjs"` no `package.json` da raiz (atalho; opcional mas recomendado).
 - `.github/workflows/pr.yml`, job `test`, depois da verificação de tipos: passo `Design system` rodando `node scripts/check-design-system.mjs`.
-- Gerador de `tokens.css` conforme a Dúvida 5.
+- Criar `scripts/gen-tokens.mjs` (decisão 5): lê `docs/design-system/tokens.json` e escreve `apps/web/src/design-system/tokens.css`; para o `tokens.json` atual a saída tem de ser idêntica ao `tokens.css` do zip. Com `--check`, não escreve e sai com erro se o arquivo commitado estiver diferente do gerado. Atalho no `package.json` da raiz: `"gen:tokens": "node scripts/gen-tokens.mjs"`. No `pr.yml`, job `test`, passo `Tokens` rodando `node scripts/gen-tokens.mjs --check`.
 
 ### 7. Documentação e skill
 - `.claude/skills/design-system/SKILL.md` do zip.
@@ -110,9 +111,9 @@ Trocas da tabela acima em `Home.tsx`, `RoomPage.tsx`, `Lobby.tsx`, `GameTable.ts
   - `node scripts/check-design-system.mjs` precisa passar antes do PR (roda no CI).
   - Mudar um valor visual = editar `docs/design-system/tokens.json`, regenerar `tokens.css` e atualizar o README no mesmo PR.
   ```
-  e, em "## Comandos", a linha `node scripts/check-design-system.mjs   # cores só por token (roda no CI)`.
+  e, em "## Comandos", as linhas `node scripts/check-design-system.mjs   # cores só por token (roda no CI)` e `node scripts/gen-tokens.mjs           # regenera tokens.css a partir do tokens.json`.
 - `docs/GAME_AUTHORING.md`: uma linha dizendo que a interface do jogo segue o design system (cores de arte em `art.tsx`, o resto por token) e que o check roda no CI.
-- `docs/design-system/README.md`, seção Tipografia: ajustar o trecho das fontes conforme a Dúvida 2.
+- `docs/design-system/README.md`, seção Tipografia: ajustar o trecho das fontes: hospedadas no app via `@fontsource` (não Google Fonts).
 - O `preview.html` referencia `../../apps/web/src/design-system/*.css`; continua funcionando depois do passo 1 (abrir direto no navegador).
 
 ## Fora do escopo
@@ -122,22 +123,12 @@ Trocas da tabela acima em `Home.tsx`, `RoomPage.tsx`, `Lobby.tsx`, `GameTable.ts
 - Redesenhar a arte dos jogos (cartas, hexes, monstros): só se reorganiza onde as cores moram e se garante legibilidade sobre a madeira.
 - Mudanças nos motores, em `room-core` ou no protocolo.
 
-## Dúvidas
-1. **Um PR ou cinco?** O roteiro do pacote sugere 5 PRs (base, logo, textos, tabuleiros, CI). Aqui cada merge faz deploy em produção e cada PR passa por analista → dev → QA → revisor.
-   - (a) **Um PR só, este** (recomendado): entre o PR 1 e o PR 4 do roteiro os tabuleiros ficariam quebrados em produção (variáveis antigas somem e `--accent` vira coral); fazer tudo junto evita isso e o trabalho é quase todo mecânico.
-   - (b) Cinco PRs, na ordem do roteiro, com aliases temporários das variáveis antigas para não quebrar a produção.
-2. **Fontes: Google Fonts ou hospedadas no app?**
-   - (a) **Hospedar no app** via `@fontsource/fredoka` e `@fontsource/nunito` (só os pesos usados), importadas em `main.tsx` (recomendado): o PWA funciona offline com as fontes certas (o service worker já guarda os assets), sem depender de terceiro e sem enviar o IP dos jogadores ao Google. Licença OFL, permitida.
-   - (b) `<link>` do Google Fonts no `index.html`, como no pacote: mais simples, mas offline cai na fonte do sistema e o primeiro acesso depende do Google.
-3. **"Mesa" também nas mensagens do servidor?** "Sala não encontrada.", "Sala expirada." e "Não foi possível criar a sala…" vêm do worker e aparecem para o jogador.
-   - (a) **Sim** (recomendado): senão o jogador vê "mesa" e "sala" misturados. Só muda o texto; códigos de fechamento iguais.
-   - (b) Não, só o `apps/web`.
-4. **Como gerar os ícones PNG a partir do SVG?** O script atual desenha o dado pixel a pixel, sem dependências.
-   - (a) **Dependência de desenvolvimento `@resvg/resvg-js`** para renderizar o SVG oficial (recomendado): o ícone fica idêntico ao logo e se atualiza sozinho se o logo mudar. Só roda à mão; os PNGs são commitados, então não pesa no build nem no CI.
-   - (b) Manter sem dependências e redesenhar as três cartas giradas à mão no script: nada novo no `package.json`, mas duplica a geometria do logo.
-5. **Gerador do `tokens.css`?** O pacote diz "não edite `tokens.css` à mão, regenere do `tokens.json`", mas não traz o gerador.
-   - (a) **Criar `scripts/gen-tokens.mjs`** (lê `tokens.json`, escreve `tokens.css`; a saída para o `tokens.json` atual tem de ser igual ao `tokens.css` do zip) e um teste/passo no CI que falha se o `tokens.css` estiver desatualizado (recomendado).
-   - (b) Não criar agora; a regra fica só como orientação e quem mudar o token edita os dois arquivos.
+## Dúvidas (resolvidas pelo dono em 13/10/2026)
+1. **Um PR ou cinco?** → **Um PR só, este.** Evita tabuleiros quebrados em produção entre PRs (variáveis antigas somem e `--accent` vira coral). Sem aliases temporários.
+2. **Fontes: Google Fonts ou hospedadas no app?** → **Hospedadas no app** (`@fontsource/fredoka` e `@fontsource/nunito`): funcionam offline e não dependem do Google.
+3. **"Mesa" também nas mensagens do servidor?** → **Sim.** "Sala não encontrada.", "Sala expirada." e "Não foi possível criar a sala…" mudam no worker; códigos de fechamento iguais.
+4. **Como gerar os ícones PNG?** → **`@resvg/resvg-js` como devDependency**, renderizando o SVG oficial; PNGs commitados.
+5. **Gerador do `tokens.css`?** → **Criar `scripts/gen-tokens.mjs`** com verificação (`--check`) no CI.
 
 ## Critérios de aceite
 1. `apps/web/src/styles.css` não existe; `main.tsx` importa `design-system/tokens.css` e `design-system/components.css`; os dois arquivos são idênticos aos do zip.
@@ -145,12 +136,13 @@ Trocas da tabela acima em `Home.tsx`, `RoomPage.tsx`, `Lobby.tsx`, `GameTable.ts
 3. `node scripts/check-design-system.mjs` passa no Linux (CI) **e** no Windows, e roda no job `test` do `pr.yml`. Colocar uma cor literal (ex.: `color: #fff;`) num `.css` de jogo faz o script falhar; com `/* design-system-ignore */` na linha, passa.
 4. Nenhuma `var(--nome)` em `apps/web/src` referencia variável inexistente em `tokens.css`/`components.css` (Revisor confere por busca; `--surface-2`, `--text-muted`, `--border`, `--warn`, `--shadow`, `--font` não aparecem mais). Seleção/destaque nos tabuleiros (peça jogável no Dominó, hex/vértice/aresta e recursos selecionados no Catan, dados travados e alvos no King of Tokyo) aparece em âmbar, não em coral.
 5. Botão principal da Home ("Abrir uma mesa") é âmbar com texto escuro e afunda ao clicar; "Encerrar" na mesa é coral; selo "Pronto" é verde-água; foco por teclado (Tab) mostra anel âmbar em botões, campos e opções.
-6. Títulos e código da mesa em Fredoka e corpo em Nunito (conferir `getComputedStyle(...).fontFamily` e que a fonte carregou); com a rede bloqueada para fontes externas, o texto aparece na fonte do sistema sem quebrar o layout. Se a Dúvida 2 for (a): com o app instalado e offline, as fontes continuam Fredoka/Nunito.
-7. Barra superior mostra o leque de cartas + "TableHub"; `favicon.svg` é o do zip; `theme-color` e o manifesto (`theme_color`, `background_color`) são `#1A1614`; os 4 PNGs do PWA mostram o leque (não o dado) e o maskable tem fundo cheio.
+6. Títulos e código da mesa em Fredoka e corpo em Nunito (conferir `getComputedStyle(...).fontFamily` e que a fonte carregou); com a rede bloqueada para fontes externas, o texto aparece na fonte do sistema sem quebrar o layout. Com o app instalado e offline, as fontes continuam Fredoka/Nunito.
+7. Barra superior mostra o leque de cartas + "TableHub"; `favicon.svg` é o do zip; `theme-color` e o manifesto (`theme_color`, `background_color`) são `#1A1614`; os 4 PNGs do PWA mostram o leque (não o dado) e o maskable tem fundo cheio; `@resvg/resvg-js` está só em `devDependencies`. O app não faz requisição a `fonts.googleapis.com`/`fonts.gstatic.com`.
 8. Nenhum texto visível da interface contém "sala"/"Sala" (Home, entrar pelo código, Lobby, mesa, fim de partida, diálogos de confirmação, mensagens de erro, texto de compartilhar), exceto a URL `/sala/...`. Os textos novos são os da tabela. Código inválido mostra "Código de mesa inválido (5 letras/números)."; código inexistente, "Mesa não encontrada. Confira o código.".
 9. A rota `/sala/<código>` continua funcionando (link antigo abre a mesa).
 10. Os quatro jogos começam e jogam algumas jogadas com 2 jogadores, no desktop e no celular (375px), com tabuleiro legível sobre a madeira, sem regressão de interação. `npm run e2e` passa (com os textos atualizados).
 11. Alvos de toque: botões e campos com altura ≥ 44px (`btn-sm` ≥ 34px) no celular.
 12. `npm run typecheck`, `npm test` e `npm run build` passam; nenhum arquivo em `packages/` mudou.
+15. As mensagens do worker para mesa inexistente, expirada e falha ao abrir usam "mesa" (smoke e testes do worker atualizados, se comparam o texto).
 13. `CLAUDE.md` tem a seção "Design system" e a linha do comando; `.claude/skills/design-system/SKILL.md` existe; `DESIGN_SYSTEM_HANDOFF.md` **não** está no repositório.
-14. Se a Dúvida 5 for (a): `node scripts/gen-tokens.mjs` gera um `tokens.css` idêntico ao commitado, e mudar um valor no `tokens.json` sem regenerar faz o CI falhar.
+14. `node scripts/gen-tokens.mjs` gera um `tokens.css` idêntico ao commitado, e mudar um valor no `tokens.json` sem regenerar faz o CI falhar.
