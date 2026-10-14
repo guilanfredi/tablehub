@@ -10,6 +10,8 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      // e2e (playwright.config.ts): sem service worker, como no `vite dev`
+      disable: process.env.TABLEHUB_E2E === '1',
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'tablehub-mark.svg', 'apple-touch-icon.png'],
       manifest: {

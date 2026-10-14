@@ -1,12 +1,35 @@
-import { expect, type Browser, type Page } from '@playwright/test';
+import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
+
+type ContextOptions = Parameters<Browser['newContext']>[0];
+
+// O `browser` é compartilhado por todos os testes do worker e não fecha os contextos criados à mão. Abertos, eles
+// seguem conectados às salas (bots jogando, animações) e deixam os testes seguintes lentos até estourarem o tempo.
+// Por isso os contextos são criados só por aqui, marcados com o teste que os abriu, e os de testes anteriores são
+// fechados ao criar o primeiro do teste atual. A marca fica no contexto (não num estado deste módulo), porque cada
+// arquivo de teste pode carregar a própria cópia dos helpers.
+const OWNER = '__tablehubTestId'; // texto, não Symbol: um Symbol também seria diferente em cada cópia
+type Owned = BrowserContext & { [OWNER]?: string };
+
+async function newContext(browser: Browser, options: ContextOptions = {}): Promise<BrowserContext> {
+  const { testId } = test.info();
+  const stale = (browser.contexts() as Owned[]).filter((c) => c[OWNER] !== undefined && c[OWNER] !== testId);
+  await Promise.all(stale.map((c) => c.close().catch(() => undefined)));
+  const ctx: Owned = await browser.newContext(options);
+  ctx[OWNER] = testId;
+  return ctx;
+}
+
+/** Visitante sem nome definido (contexto isolado). Use este ou `newPlayer`, nunca `browser.newContext()` direto. */
+export async function newGuest(browser: Browser, contextOptions: ContextOptions = {}): Promise<Page> {
+  return (await newContext(browser, contextOptions)).newPage();
+}
 
 /**
  * Cada jogador é um contexto de navegador isolado (localStorage próprio = identidade própria).
  * Herda o dispositivo do projeto (desktop/mobile) em execução.
  */
-export async function newPlayer(browser: Browser, name: string, contextOptions: Parameters<Browser['newContext']>[0] = {}): Promise<Page> {
-  const ctx = await browser.newContext(contextOptions);
-  const page = await ctx.newPage();
+export async function newPlayer(browser: Browser, name: string, contextOptions: ContextOptions = {}): Promise<Page> {
+  const page = await newGuest(browser, contextOptions);
   await page.addInitScript((n) => localStorage.setItem('th:name', n), name);
   return page;
 }

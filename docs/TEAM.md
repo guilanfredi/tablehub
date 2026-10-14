@@ -19,7 +19,8 @@ manual em manuals/<id>.pdf
   └─ /analista  → branch game/<id>, RULES.md, PR rascunho        [fase:spec]
        você responde as dúvidas no PR
   └─ /analista <PR> → relê as respostas, atualiza o RULES.md      → [fase:dev]
-  └─ /dev       → motor + testes + interface, CI verde            → [fase:qa]
+  └─ /dev       → motor + testes + interface, push                → [fase:qa]
+       o despachante espera o CI (test + e2e); vermelho → volta para [fase:dev]
   └─ /qa        → joga com vários perfis, celular, casos de borda
                    ok → [fase:review]   bugs → comentários + [fase:dev]
   └─ /revisor   → revisão contra o RULES.md
