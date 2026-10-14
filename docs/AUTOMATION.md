@@ -13,6 +13,7 @@ Aqui no TableHub fica só o que é do projeto, em `.agents/`. O despachante lê 
 | `.agents/config.json` | repositório, dono, bot, etiquetas (inclusive a de "pronto", usada pelo relatório), funções (fase, tempo máximo, só-PR, **modelo e esforço**), **espera do CI**, pasta dos worktrees (`../TableHub-agents`), `npm ci` quando o lockfile muda, portas |
 | `.agents/roles/<função>.json` | permissões do Claude Code de cada função (no modo automático, o que não está liberado é negado; quem edita roda em `acceptEdits`): todas negam merge, force-push, push na `main`, segredos, `gh auth` (exceto `status`), deploy e acesso à web; o Revisor não tem `Edit`/`Write` nem `git commit`/`git push` |
 | `.agents/prompt.md` | instruções do TableHub para o modo automático (Playwright, portas, manuais) |
+| `.agents/actions-prompt.md` | instruções do modo automático para as funções que rodam no GitHub Actions (piloto do Revisor, abaixo) |
 
 ## Modelo e esforço por função
 Para gastar menos cota, cada função usa o modelo e o esforço que o trabalho pede (`.agents/config.json`):
@@ -39,11 +40,36 @@ investigações longas. A divisão agora é:
 | QA | o roteiro exploratório do PR (`e2e/<id>-qa.spec.ts`), que fica como regressão |
 | CI (job `e2e` do `pr.yml`) | a suíte completa, desktop + mobile, em 2 partes paralelas e com 1 nova tentativa |
 
-- Com `ci` no `.agents/config.json`, o despachante só chama QA e Revisor quando os checks `test` e `e2e` do último commit
-  estão verdes, e devolve o PR para `fase:dev` (com um comentário) se algum falhar. O Dev troca a etiqueta logo depois
+- Com `ci` no `.agents/config.json`, o despachante só chama o QA (e o Revisor, no Actions, segue a mesma regra) quando os
+  checks `test` e `e2e` do último commit estão verdes, e devolve o PR para `fase:dev` (com um comentário) se algum falhar. O Dev troca a etiqueta logo depois
   do push, sem esperar o CI. CI instável: reexecute o job no GitHub.
 - `npm run e2e` compila o app (sem service worker) e sobe só o worker, que serve o build e a API como em produção.
   Não reaproveita servidor já rodando: com `npm run dev` aberto na mesma porta, use outra (`TABLEHUB_WORKER_PORT=8790 npm run e2e`).
+
+## Piloto: Revisor no GitHub Actions
+O Revisor roda no GitHub Actions (`.github/workflows/agente-revisor.yml`, com a
+[claude-code-action](https://github.com/anthropics/claude-code-action)) em vez do despachante local, para comparar:
+máquina própria por execução (sem disputar CPU com outros agentes), sem depender deste PC ligado e, em repositório
+público, sem custo de minutos. As outras funções continuam no despachante.
+
+- **Configuração:** a função está em `actions.roles` do `.agents/config.json` (o despachante só lê `roles`), com modelo,
+  esforço e tempo máximo. Permissões: as mesmas de `.agents/roles/revisor.json`. Instruções do modo automático:
+  `.agents/actions-prompt.md`.
+- **Quando roda:** o PR recebe `fase:review` ou o CI ("PR") termina. O portão (`scripts/agent-gate.mjs`) aplica as regras do
+  despachante: etiqueta da função, autor dono ou bot, sem `agente:trabalhando`/`aguardando-dono`, e `test` + `e2e` verdes.
+  CI vermelho: volta para `fase:dev` com comentário. O workflow e os scripts vêm sempre da `main`
+  (`pull_request_target`/`workflow_run`), nunca do PR.
+- **Falha ou tempo esgotado:** comentário com o link do log e `aguardando-dono`. Para tentar de novo: Actions →
+  "Agente revisor" → *Run workflow* com o número do PR (a execução manual ignora `aguardando-dono`).
+- **Comparar com o local:** cada execução mostra no resumo do job o tempo, os turnos, os tokens e o custo equivalente, e
+  guarda o log completo como artifact (`revisor-pr<n>-<run>`, 30 dias). Do lado local, `npm run relatorio` no repositório
+  da automação.
+- **Segredos do repositório** (Settings → Secrets and variables → Actions), criados pelo dono:
+  - `CLAUDE_CODE_OAUTH_TOKEN`: gerado com `claude setup-token`; usa a sua assinatura, como os agentes locais.
+  - `BOT_GH_TOKEN`: token do gui-dev-bot (fine-grained, só este repositório: Contents leitura, Issues e Pull requests
+    leitura e escrita). É com ele que o revisor comenta e troca etiquetas, como hoje.
+- **Desfazer:** devolva o item de `actions.roles` para `roles` (com `"prOnly": true`), acrescente `"revisor"` em `ci.roles`
+  e apague o workflow.
 
 ## Portas por instância
 Para várias instâncias rodarem juntas, as portas vêm do ambiente (padrão entre parênteses):

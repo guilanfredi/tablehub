@@ -5,7 +5,6 @@
   "bot": { "login": "gui-dev-bot", "email": "341239158+gui-dev-bot@users.noreply.github.com" },
   "labels": { "working": "agente:trabalhando", "waiting": "aguardando-dono", "done": "pronto-para-aprovação" },
   "roles": [
-    { "name": "revisor", "label": "fase:review", "timeoutMin": 30, "prOnly": true, "model": "claude-opus-5-5", "effort": "medium" },
     { "name": "qa", "label": "fase:qa", "timeoutMin": 60, "prOnly": true, "model": "claude-sonnet-5-5", "effort": "medium" },
     {
       "name": "dev", "label": "fase:dev", "timeoutMin": 120, "model": "claude-opus-5-5",
@@ -13,7 +12,12 @@
     },
     { "name": "analista", "label": "fase:spec", "timeoutMin": 60, "model": "claude-opus-5-5" }
   ],
-  "ci": { "checks": ["test", "e2e"], "roles": ["qa", "revisor"], "failLabel": "fase:dev" },
+  "ci": { "checks": ["test", "e2e"], "roles": ["qa"], "failLabel": "fase:dev" },
+  "actions": {
+    "roles": [
+      { "name": "revisor", "label": "fase:review", "timeoutMin": 30, "model": "claude-opus-5-5", "effort": "medium" }
+    ]
+  },
   "worktreesDir": "../TableHub-agents",
   "addDirs": ["manuals"],
   "setup": { "command": "npm ci --no-audit --no-fund", "whenChanged": "package-lock.json" },
