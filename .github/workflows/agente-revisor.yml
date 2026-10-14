@@ -1,0 +1,99 @@
+name: Agente revisor
+
+# Piloto: a função Revisor roda aqui, no GitHub Actions, em vez do despachante local (docs/AUTOMATION.md).
+# Dispara quando o PR recebe `fase:review` ou quando o CI ("PR") termina, o que vier por último; o portão
+# (scripts/agent-gate.mjs) só deixa rodar com a etiqueta, autor dono/bot e `test` + `e2e` verdes, e devolve
+# para `fase:dev` com CI vermelho. pull_request_target e workflow_run usam o workflow e os scripts da `main`.
+
+on:
+  pull_request_target:
+    types: [labeled]
+  workflow_run:
+    workflows: [PR]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Número do PR
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agente-revisor-${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number || inputs.pr }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: gate
+    # outras etiquetas: nem inicia (a regra completa está no portão)
+    if: github.event_name != 'pull_request_target' || github.event.label.name == 'fase:review'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.gate.outputs.run }}
+      pr: ${{ steps.gate.outputs.pr }}
+      timeout: ${{ steps.gate.outputs.timeout }}
+      model_args: ${{ steps.gate.outputs.model_args }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: gate
+        env:
+          GH_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
+          PR: ${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number || inputs.pr }}
+          MANUAL: ${{ github.event_name == 'workflow_dispatch' && '--manual' || '' }}
+        run: node scripts/agent-gate.mjs --role revisor --pr "$PR" $MANUAL
+
+  revisor:
+    name: revisor
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ fromJSON(needs.gate.outputs.timeout) }}
+    env:
+      PR: ${{ needs.gate.outputs.pr }}
+      # o `gh` do agente (e destes passos) age como gui-dev-bot, como no despachante local
+      GH_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Preparação
+        run: |
+          git config user.name gui-dev-bot
+          git config user.email 341239158+gui-dev-bot@users.noreply.github.com
+          # o agente pode trocar a cópia de trabalho para o código do PR (gh pr checkout): guarda o que vem da main
+          cp .agents/actions-prompt.md .agents/roles/revisor.json scripts/agent-summary.mjs "$RUNNER_TEMP/"
+          gh pr edit "$PR" --add-label agente:trabalhando
+      - name: Revisor
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.BOT_GH_TOKEN }}
+          bot_name: gui-dev-bot
+          bot_id: '341239158'
+          prompt: /revisor ${{ needs.gate.outputs.pr }}
+          settings: ${{ runner.temp }}/revisor.json
+          claude_args: |
+            ${{ needs.gate.outputs.model_args }}
+            --append-system-prompt-file ${{ runner.temp }}/actions-prompt.md
+      - name: Resumo (tempo, turnos, tokens, custo)
+        if: always() && steps.claude.outputs.execution_file != ''
+        run: |
+          cp "${{ steps.claude.outputs.execution_file }}" "$RUNNER_TEMP/execucao.json"
+          node "$RUNNER_TEMP/agent-summary.mjs" "$RUNNER_TEMP/execucao.json" revisor "$PR"
+      - name: Log da execução
+        if: always() && steps.claude.outputs.execution_file != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: revisor-pr${{ needs.gate.outputs.pr }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/execucao.json
+          retention-days: 30
+      - name: Libera a etiqueta
+        if: always()
+        run: gh pr edit "$PR" --remove-label agente:trabalhando || true
+      - name: Chama o dono se falhou
+        if: failure() || cancelled()
+        run: |
+          gh pr comment "$PR" --body "**[Automação]** A função revisor falhou ou passou de ${{ needs.gate.outputs.timeout }} min no GitHub Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. @guilanfredi, veja o log e, para tentar de novo, rode o workflow \"Agente revisor\" com o número do PR."
+          gh pr edit "$PR" --add-label aguardando-dono
