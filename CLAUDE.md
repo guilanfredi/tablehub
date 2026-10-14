@@ -23,7 +23,7 @@ node scripts/smoke.mjs http://localhost:8787   # teste ponta a ponta contra um s
 node scripts/check-design-system.mjs   # cores só por token (roda no CI)
 node scripts/gen-tokens.mjs           # regenera tokens.css a partir do tokens.json
 npm run new-game -- <id> "<Nome>"
-npm run e2e         # Playwright (desktop + mobile); BASE_URL=<url> para outro ambiente
+npm run e2e         # Playwright (desktop + mobile) no app compilado; BASE_URL=<url> para outro ambiente. Suíte completa: CI
 ```
 Para testar vários jogadores no mesmo navegador, use `?perfil=2`, `?perfil=3`… na URL.
 

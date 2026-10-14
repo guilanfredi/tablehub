@@ -34,6 +34,37 @@ jobs:
       - name: Build
         run: npm run build
 
+  # regressão completa no navegador (desktop + mobile), dividida em partes paralelas; o despachante dos agentes
+  # só chama QA/Revisor com `test` e `e2e` verdes (.agents/config.json)
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    env:
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Navegador do Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Testes ponta a ponta (parte ${{ matrix.shard }} de 2)
+        run: npx playwright test --shard=${{ matrix.shard }}/2
+      - name: Capturas e traces das falhas
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 7
+
   preview:
     name: preview
     needs: test

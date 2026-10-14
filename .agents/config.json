@@ -13,6 +13,7 @@
     },
     { "name": "analista", "label": "fase:spec", "timeoutMin": 60, "model": "claude-opus-5-5" }
   ],
+  "ci": { "checks": ["test", "e2e"], "roles": ["qa", "revisor"], "failLabel": "fase:dev" },
   "worktreesDir": "../TableHub-agents",
   "addDirs": ["manuals"],
   "setup": { "command": "npm ci --no-audit --no-fund", "whenChanged": "package-lock.json" },

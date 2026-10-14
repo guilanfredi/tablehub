@@ -15,11 +15,15 @@ Você é o **QA**. Leia `docs/TEAM.md`. Seu trabalho é **encontrar problemas**,
 ## Passos
 1. Identidade: `gh auth status` mostra `gui-dev-bot` e `git config user.name` é `gui-dev-bot`. Se não, pare e avise.
 2. `git fetch origin <branch> && git switch --detach origin/<branch>` (funciona em worktree; veja o `docs/TEAM.md`), `npm install`. Leia a especificação do PR (`RULES.md` do jogo ou `docs/specs/<nº>-*.md` da melhoria) e os **Critérios de aceite**.
-3. Verificação: `npm run typecheck && npm test && npm run build`.
+3. Não repita a verificação do CI (typecheck, testes, build, suíte e2e): o despachante só chama o QA com os checks `test` e `e2e` verdes. Seu trabalho é o roteiro exploratório deste PR.
 4. Escolha a ferramenta:
    - **Sessão no app desktop** (ferramentas `mcp__Claude_Browser__*` disponíveis): suba o app (`preview_start` com `tablehub-dev`) e abra uma aba por jogador (`?perfil=2`, `?perfil=3`...).
    - **Modo automático** (sem navegador embutido): use **Playwright**. Escreva o roteiro em `e2e/<id>.spec.ts` usando `e2e/helpers.ts` (`newPlayer` cria jogadores em contextos isolados; `createRoom`, `joinRoom`, `chooseGame`, `setReady`, `startGame`, `whoseTurn`, `failOnConsoleErrors`) e rode `npm run e2e -- e2e/<id>.spec.ts` (sobe o app local sozinho; os projetos `desktop` e `mobile` cobrem o celular). Para testar o preview do PR: `BASE_URL=<url> npm run e2e -- e2e/<id>.spec.ts`. Em falha, leia `test-results/**/error-context.md` e as capturas de tela antes de concluir que é bug.
-     O spec do jogo é mantido no PR (commit `test(<id>): e2e`) e vira teste de regressão.
+     Rode **só o seu roteiro** (e, se precisar, o spec principal do jogo); nunca a suíte completa, que roda no CI.
+     O spec é mantido no PR (commit `test(<id>): e2e`) e vira teste de regressão: **o CI o roda em todo PR**. Mantenha-o
+     enxuto: partidas com as opções mais curtas, sem esperas fixas (`waitForTimeout`), e `test.setTimeout` só no teste
+     que joga até o fim. Abra páginas só com `newPlayer`/`newGuest` (de `e2e/helpers.ts`), nunca `browser.newContext()`
+     direto: os helpers fecham os contextos do teste anterior, que de outro modo continuam jogando e deixam a suíte lenta. Casos exploratórios caros (estresse, várias partidas seguidas) ficam num arquivo temporário apagado antes do commit.
    Teste:
    - **Lobby:** o jogo aparece; opções e resumo de regras corretos; `validateConfig` bloqueia combinações inválidas; contagem de jogadores.
    - **Partida:** cada critério de aceite pela interface; ao menos uma rodada completa; cada tipo de ação; jogadas inválidas recusadas com mensagem clara.

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { chooseGame, createRoom, failOnConsoleErrors, joinRoom, newPlayer, startGame } from './helpers';
+import { chooseGame, createRoom, failOnConsoleErrors, joinRoom, newGuest, newPlayer, startGame } from './helpers';
 
 const BOT_NAMES = ['Paula', 'Jacinto', 'Benjamin', 'Cuca', 'Kelly', 'Oscar', 'Simas', 'Giuseppe', 'Sujiro', 'Tati', 'Kevin'];
 
@@ -13,7 +13,7 @@ async function pickAvatar(page: Page, label: string) {
 }
 
 test('perfil: avatar sugerido, escolha e apelido persistem; ?perfil=2 é outro perfil', async ({ browser }) => {
-  const page = await (await browser.newContext()).newPage();
+  const page = await newGuest(browser);
   const errors = failOnConsoleErrors(page);
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Seu perfil' })).toBeVisible();
@@ -41,7 +41,7 @@ test('perfil: entrar por link escolhe avatar; troca no lobby aparece para todos;
   const errors = failOnConsoleErrors(ana);
   const code = await createRoom(ana);
 
-  const beto = await (await browser.newContext()).newPage();
+  const beto = await newGuest(browser);
   await beto.goto(`/sala/${code}`);
   await expect(beto.getByLabel('Seu apelido')).toBeVisible();
   await beto.getByLabel('Seu apelido').fill('Beto');
@@ -167,7 +167,7 @@ async function playOne(page: Page) {
 test('cliente antigo (hello sem avatar) entra com avatar padrão estável', async ({ browser }) => {
   const ana = await newPlayer(browser, 'Ana');
   const code = await createRoom(ana);
-  const old = await (await browser.newContext()).newPage();
+  const old = await newGuest(browser);
   await old.goto('/');
   const avatarFor = () =>
     old.evaluate(

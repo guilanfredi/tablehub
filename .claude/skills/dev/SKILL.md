@@ -28,6 +28,7 @@ Use `gh issue view`/`gh pr view` para saber se o número é issue ou PR.
    Leia **todos** os comentários desde a sua última passagem: decisões do dono e achados de **[QA]** e **[Revisor]**.
    Conte os ciclos (comentários **[QA] Reprovado** e **[Revisor] Com bloqueantes**, ver "Limites" no `docs/TEAM.md`): se forem 4 ou mais, vá para o passo 8.
    Branch em HEAD destacado (funciona em worktree): `git fetch origin <branch> && git switch --detach origin/<branch>`.
+   Se o PR voltou por CI vermelho (comentário **[Automação]** "O CI falhou"), comece por ele: `gh pr checks <n>` e `gh run view <id> --log-failed | tail -60`; para um e2e, rode localmente só o teste que falhou.
 3. Implemente seguindo a especificação do PR (`RULES.md` do jogo ou `docs/specs/<nº>-*.md` da melhoria), que é a fonte da verdade (sem especificação, a issue). Se ela estiver ambígua ou contradizer um comentário, **pergunte** no PR em vez de decidir sozinho: comentário **[Dev]** mencionando @guilanfredi, etiqueta `aguardando-dono`, e encerre.
    - TDD: um teste por critério de aceite, depois a regra.
    - `runConformance` com `leakCheck`, várias contagens de jogadores e conjuntos de opções, `requireFinish: true` (com `chooseAction` se o jogo for longo).
@@ -36,9 +37,19 @@ Use `gh issue view`/`gh pr view` para saber se o número é issue ou PR.
    ```bash
    npm run typecheck && npm test && npm run build
    ```
-   Em jogo novo, confira rapidamente que a tela carrega e uma jogada funciona: no app desktop com `preview_start` (`tablehub-dev`); no modo automático, com `npm run e2e` (e um teste e2e mínimo do jogo em `e2e/`). O teste aprofundado é do QA.
+   **e2e: rode só os testes da área que você mexeu**, conforme a mudança:
+   | Mudança | e2e antes do push |
+   |---|---|
+   | Só motor/regras (`packages/`), sem interface | nenhum; os testes unitários e a conformidade cobrem |
+   | Interface de um jogo ou de uma tela | os specs daquele jogo/tela, só no desktop: `npm run e2e -- e2e/<id>.spec.ts --project=desktop` (inclua `--project=mobile` se mexeu em layout) |
+   | Componente compartilhado (mesa comum, lobby, `e2e/helpers.ts`) | o spec principal de cada jogo afetado (`e2e/<id>.spec.ts`, não os `*-qa.spec.ts`), só no desktop |
+   | Jogo novo | um spec mínimo do jogo em `e2e/<id>.spec.ts` (a tela carrega e uma jogada funciona) |
+
+   **Nunca rode a suíte e2e completa nem os `*-qa.spec.ts` longos:** a regressão completa roda no CI (job `e2e`) em cada push. O teste aprofundado é do QA.
+   No app desktop, em vez do Playwright, `preview_start` (`tablehub-dev`) serve para conferir a tela.
 5. Commits pequenos e descritivos, com o trailer de co-autoria; publique com `git push origin HEAD:<branch>` (se outra sessão publicou antes, `git fetch origin <branch> && git rebase origin/<branch>`).
 6. Responda cada achado de QA/Revisor no próprio fio: `Corrigido em <sha>.` ou, em uma frase, por que não se aplica.
-7. Com o CI verde (`gh pr checks <n> --watch`): comentário **[Dev]** curto (ver "Comunicação") e troque a etiqueta removendo a atual:
+7. Depois do push, **sem esperar o CI**: comentário **[Dev]** curto (ver "Comunicação") e troque a etiqueta removendo a atual:
    `gh pr edit <n> --remove-label fase:dev --add-label fase:qa` (jogo novo ou mudança visual) ou `--add-label fase:review` (sem impacto visual).
+   O despachante só chama o QA/Revisor com os checks `test` e `e2e` verdes e, se algum falhar, devolve o PR para `fase:dev`. Não use `gh pr checks --watch`.
 8. **Limite de ciclos:** se a contagem do passo 2 for 4 ou mais, não corrija. Comente **[Dev] Limite de ciclos** com o histórico dos achados de cada ciclo e o que continua em aberto, mantenha `fase:dev`, mencione @guilanfredi pedindo decisão e adicione `aguardando-dono`.
