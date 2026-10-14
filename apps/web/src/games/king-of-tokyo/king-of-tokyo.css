@@ -164,9 +164,9 @@
 .kot-die.green {
   background: #1f6b3a; /* design-system-ignore: arte do dado */
 }
-.kot-die.kept {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary);
+.kot-die.reroll {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent);
   transform: translateY(-3px);
 }
 .kot-die:disabled {

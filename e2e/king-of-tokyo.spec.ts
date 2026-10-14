@@ -37,7 +37,7 @@ test('king of tokyo: rolar, guardar, resolver, ver a vitrine e passar a vez', as
   await current.getByRole('button', { name: 'Rolar dados' }).click();
   await expect(current.locator('.kot-dice .kot-die')).toHaveCount(6);
   await current.locator('.kot-die').first().click();
-  await expect(current.locator('.kot-die.kept')).toHaveCount(1);
+  await expect(current.locator('.kot-die.reroll')).toHaveCount(1);
   await current.getByRole('button', { name: 'Parar e resolver' }).click();
 
   // ninguém em Tóquio: o jogador da vez entra na Cidade
