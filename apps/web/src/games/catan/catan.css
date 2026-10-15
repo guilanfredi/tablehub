@@ -139,6 +139,21 @@
   animation: pulse 1.2s ease-in-out infinite;
 }
 
+.catan .picked {
+  animation: none;
+  opacity: 1;
+}
+
+.catan .hex-target.picked {
+  fill: color-mix(in srgb, var(--primary) 55%, transparent);
+}
+
+.catan-confirm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 @keyframes pulse {
   50% {
     opacity: 0.45;

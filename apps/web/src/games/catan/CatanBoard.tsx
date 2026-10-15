@@ -59,6 +59,7 @@ export default function CatanBoard({ game, room, you, act }: BoardProps) {
   const legal = game.legal as CatanAction[];
   const g = catanGraph();
   const [mode, setMode] = useState<Mode>(null);
+  const [pending, setPending] = useState<CatanAction | null>(null);
   const [panel, setPanel] = useState<'bank' | 'players' | null>(null);
   const colorOf = (pid: string) => v.players.find((p) => p.id === pid)?.color ?? BOARD_ART.unknownPlayer;
   const nameOf = (pid: string) => (pid === you ? 'Você' : (v.players.find((p) => p.id === pid)?.name ?? pid));
@@ -87,7 +88,28 @@ export default function CatanBoard({ game, room, you, act }: BoardProps) {
   function doAct(a: CatanAction) {
     act(a);
     setMode(null);
+    setPending(null);
   }
+
+  // seleção no tabuleiro só vale se ainda for um alvo legal; executa após confirmar
+  const isPicked = (a: CatanAction) => pending !== null && JSON.stringify(pending) === JSON.stringify(a);
+  const pendingValid = pending !== null && legal.some(isPicked);
+  const pendingLabel = (() => {
+    switch (pending?.type) {
+      case 'placeSettlement':
+      case 'buildSettlement':
+        return 'Colocar a aldeia aqui?';
+      case 'buildCity':
+        return 'Transformar em cidade aqui?';
+      case 'placeRoad':
+      case 'buildRoad':
+        return 'Colocar a estrada aqui?';
+      case 'moveRobber':
+        return 'Mover o ladrão para este terreno?';
+      default:
+        return 'Confirmar?';
+    }
+  })();
 
   const vb = { x: g.bounds.minX * S - 50, y: g.bounds.minY * S - 50, w: (g.bounds.maxX - g.bounds.minX) * S + 100, h: (g.bounds.maxY - g.bounds.minY) * S + 100 };
   const hexById = new Map(v.board.hexes.map((h) => [h.id, h]));
@@ -134,7 +156,19 @@ export default function CatanBoard({ game, room, you, act }: BoardProps) {
             )}
             <span className="small">Meta: {v.vpToWin} ★</span>
           </div>
-          {phaseHint && <div className="catan-hint">{phaseHint}</div>}
+          {pendingValid ? (
+            <div className="catan-hint catan-confirm" role="group" aria-label="Confirmar jogada">
+              <span className="grow">{pendingLabel}</span>
+              <button className="btn btn-sm" onClick={() => setPending(null)}>
+                Cancelar
+              </button>
+              <button className="btn btn-sm btn-primary" onClick={() => doAct(pending!)}>
+                Confirmar
+              </button>
+            </div>
+          ) : (
+            phaseHint && <div className="catan-hint">{phaseHint}</div>
+          )}
           <PanZoom viewBox={vb} ariaLabel="Tabuleiro do Catan">
             {/* terrenos */}
             {g.hexOrder.map((id) => {
@@ -143,7 +177,7 @@ export default function CatanBoard({ game, room, you, act }: BoardProps) {
               const pts = cell.vertices.map((vid) => `${g.vertices[vid].x * S},${g.vertices[vid].y * S}`).join(' ');
               const target = targets.hexes.get(id);
               return (
-                <g key={id} className={target ? 'hit hit-hex' : ''} onClick={target ? () => doAct(target) : undefined}>
+                <g key={id} className={target ? 'hit hit-hex' : ''} onClick={target ? () => setPending(target) : undefined}>
                   <polygon points={pts} fill={TERRAIN_FILL[h.terrain]} stroke={BOARD_ART.hexStroke} strokeWidth={3} />
                   <g transform={`translate(${cell.x * S} ${cell.y * S - 22}) scale(1.3)`} opacity={0.9}>
                     <TerrainGlyph t={h.terrain} />
@@ -161,7 +195,7 @@ export default function CatanBoard({ game, room, you, act }: BoardProps) {
                       </g>
                     </g>
                   )}
-                  {target && <polygon points={pts} className="hex-target" />}
+                  {target && <polygon points={pts} className={`hex-target ${isPicked(target) ? 'picked' : ''}`} />}
                 </g>
               );
             })}
@@ -214,8 +248,8 @@ export default function CatanBoard({ game, room, you, act }: BoardProps) {
             {[...targets.edges.entries()].map(([eid, a]) => {
               const [p, q] = g.edges[eid].vertices.map((vid) => g.vertices[vid]);
               return (
-                <g key={eid} className="hit" onClick={() => doAct(a)}>
-                  <line x1={p.x * S} y1={p.y * S} x2={q.x * S} y2={q.y * S} className="edge-target" />
+                <g key={eid} className="hit" onClick={() => setPending(a)}>
+                  <line x1={p.x * S} y1={p.y * S} x2={q.x * S} y2={q.y * S} className={`edge-target ${isPicked(a) ? 'picked' : ''}`} />
                   <line x1={p.x * S} y1={p.y * S} x2={q.x * S} y2={q.y * S} stroke="transparent" strokeWidth={22} />
                 </g>
               );
@@ -237,8 +271,8 @@ export default function CatanBoard({ game, room, you, act }: BoardProps) {
             {[...targets.vertices.entries()].map(([vid, a]) => {
               const p = g.vertices[vid];
               return (
-                <g key={vid} className="hit" onClick={() => doAct(a)}>
-                  <circle cx={p.x * S} cy={p.y * S} r={9} className="vertex-target" />
+                <g key={vid} className="hit" onClick={() => setPending(a)}>
+                  <circle cx={p.x * S} cy={p.y * S} r={isPicked(a) ? 12 : 9} className={`vertex-target ${isPicked(a) ? 'picked' : ''}`} />
                   <circle cx={p.x * S} cy={p.y * S} r={18} fill="transparent" />
                 </g>
               );
