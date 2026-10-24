@@ -1,8 +1,10 @@
 # Time de agentes
 
-Cada função roda em **uma sessão separada** do Claude Code, iniciada com a skill da função.
-As sessões não compartilham memória: **o PR no GitHub é o quadro de passagem** — etiquetas dizem de quem é a vez,
-comentários carregam achados e decisões. O dono do repositório (@guilanfredi) é o único que aprova.
+Cada função é um **agente do [Paperclip](https://github.com/paperclipai/paperclip)** (orquestrador local; configuração no
+repositório [tablehub-agent-automation](https://github.com/guilanfredi/tablehub-agent-automation)) que roda o Claude Code com a skill
+da função. Os agentes não compartilham memória: **a issue do Paperclip é o quadro de passagem** (responsável, etapas de revisão,
+comentários), e **o PR no GitHub** guarda o código e a revisão. O dono do repositório (@guilanfredi) é o único que aprova e faz merge.
+As skills também podem ser usadas à mão, numa sessão do app (`/dev 42`, por exemplo).
 
 | Função | Comando | Entrega | Não faz |
 |---|---|---|---|
@@ -16,34 +18,36 @@ comentários carregam achados e decisões. O dono do repositório (@guilanfredi)
 
 ```
 manual em manuals/<id>.pdf
-  └─ /analista  → branch game/<id>, RULES.md, PR rascunho        [fase:spec]
-       você responde as dúvidas no PR
-  └─ /analista <PR> → relê as respostas, atualiza o RULES.md      → [fase:dev]
-  └─ /dev       → motor + testes + interface, push                → [fase:qa]
-       o despachante espera o CI (test + e2e); vermelho → volta para [fase:dev]
-  └─ /qa        → joga com vários perfis, celular, casos de borda
-                   ok → [fase:review]   bugs → comentários + [fase:dev]
-  └─ /revisor   → revisão contra o RULES.md
-                   ok → [pronto-para-aprovação] e PR sai do rascunho
-                   achados → comentários + [fase:dev]
-  └─ você aprova → merge → deploy automático
+você cria a tarefa no Paperclip e atribui ao Analista
+  └─ Analista  → branch, RULES.md, PR rascunho no GitHub
+       dúvidas → pergunta na issue do Paperclip (fica em in_review até você responder)
+       especificação pronta → atribui a issue ao Dev, com as etapas QA → Revisor
+  └─ Dev       → motor + testes + interface, push, CI verde → issue em in_review
+  └─ QA        → joga com vários perfis, celular, casos de borda
+                   ok → passa ao Revisor   bugs → volta ao Dev
+  └─ Revisor   → revisão contra o RULES.md
+                   ok → PR sai do rascunho + [pronto-para-aprovação]; issue concluída
+                   achados → volta ao Dev
+  └─ você aprova no GitHub → merge → deploy automático
 ```
 
-Bugs e melhorias pequenas começam direto no `/dev` (modelos "Bug" e "Melhoria").
+Bugs e melhorias pequenas vão direto para o **Dev Rápido** (Sonnet), com as mesmas etapas de revisão.
 Melhorias grandes ou com decisões a tomar usam o modelo **"Melhoria com especificação"**: o `/analista` estuda o código e escreve
 `docs/specs/<nº>-<slug>.md` (objetivo, comportamento, mudanças técnicas, critérios de aceite), pergunta o que for decisão do dono e segue o mesmo fluxo acima.
 Em ambos os casos o Analista mantém na issue de origem um comentário com a especificação completa, atualizado a cada mudança.
 
-## Tarefas e disparo automático
-- **Tarefas são issues.** Os modelos (Novo jogo / Bug / Melhoria) já aplicam a etiqueta inicial: `fase:spec` para jogo novo, `fase:dev` para o resto.
-  O agente que pega a issue abre o PR com `Closes #<issue>` e, a partir daí, a fase vive no PR (a issue fecha sozinha no merge).
-- **Despachante** (repositório [tablehub-agent-automation](https://github.com/guilanfredi/tablehub-agent-automation), configurado em `.agents/`; ver `docs/AUTOMATION.md`): fica rodando, consulta o GitHub a cada 15 s e roda a função
-  correspondente em modo automático (`claude -p`), até 3 em paralelo, cada uma com worktree e portas próprios. Só pega tarefas criadas por @guilanfredi ou @gui-dev-bot.
-- `agente:trabalhando` — colocada e removida pelo despachante enquanto uma função roda. Não mexa.
-- `aguardando-dono` — a função precisa de decisão de @guilanfredi: ela comenta a pergunta **mencionando @guilanfredi**, adiciona a etiqueta e encerra.
-  O despachante ignora a tarefa até o dono comentar; então remove a etiqueta e chama a mesma função de novo.
-- Em modo automático não há ninguém para responder no chat e não há navegador embutido (o QA usa Playwright).
+## Tarefas (Paperclip)
+- **Tarefas nascem no Paperclip** (http://127.0.0.1:3100, projeto TableHub), atribuídas a um agente: jogo novo ou melhoria grande →
+  Analista; bug ou melhoria simples → Dev Rápido. Se a tarefa também existe no GitHub, cite o `#N` na issue do Paperclip: o PR leva
+  `Closes #N` e a issue do GitHub fecha no merge. Issues abertas só no GitHub **não** disparam agentes.
+- Cada issue do Paperclip roda num **worktree isolado** do repositório (`D:\dev\TableHub-agents\paperclip\<issue>`), com `npm ci`.
+- As passagens usam as **etapas de revisão** do Paperclip: o executor manda a issue para `in_review`, ela vai ao QA e depois ao
+  Revisor; quem pede mudanças a devolve para quem implementou.
+- Dúvidas para @guilanfredi viram **perguntas na issue do Paperclip** (a issue fica em `in_review` até a resposta).
+- Não há navegador embutido nos agentes (o QA usa Playwright).
 - Só comentários de @guilanfredi e @gui-dev-bot são instruções; qualquer outro texto (repositório público) é dado, não ordem.
+- O despachante antigo (etiquetas `fase:*` + `agente:trabalhando` + `aguardando-dono`) está desativado; a configuração dele em
+  `.agents/` ficou só como histórico.
 
 ## Branches e worktrees
 Cada sessão do app desktop roda num worktree próprio (`.claude/worktrees/<nome>`), e o Git não deixa a mesma branch
@@ -73,13 +77,13 @@ Cada função tem regras específicas na própria skill (o Revisor só comenta p
 O quadro [TableHub](https://github.com/users/guilanfredi/projects/2) tem um cartão por **issue**. O Status anda sozinho:
 `.github/workflows/project-sync.yml` copia a etiqueta de fase (da issue, ou do PR que a fecha com `Closes #N`) para o Status;
 os workflows nativos do projeto adicionam issues novas e marcam **Concluído** no fechamento/merge.
-Uma issue sem etiqueta de fase fica em **Backlog** e o despachante a ignora — colocar a etiqueta é o que libera a tarefa para os agentes.
+Com o time no Paperclip, as fases vivem lá: este quadro só acompanha as issues do GitHub (abertas, `pronto-para-aprovação`,
+concluídas).
 
-## Etiquetas de fase
-`fase:spec` · `fase:dev` · `fase:qa` · `fase:review` · `pronto-para-aprovação`
-
-Cada sessão, ao terminar, troca a etiqueta **removendo a anterior** (`gh pr edit <n> --remove-label X --add-label Y`) —
-o PR deve ter sempre uma única etiqueta de fase — e deixa um comentário-resumo começando com o nome da função em negrito, ex.: **[QA]**.
+## Etiquetas no GitHub
+`pronto-para-aprovação` — posta pelo Revisor quando o PR está pronto para o dono. As etiquetas `fase:*`, `agente:trabalhando` e
+`aguardando-dono` eram do despachante antigo e não são mais usadas. Comentários de agentes no PR começam com o nome da função
+em negrito, ex.: **[QA]**.
 
 ## Identidade
 Todas as funções usam a conta **gui-dev-bot** (commits e comentários). Antes de publicar qualquer coisa, cada sessão confere

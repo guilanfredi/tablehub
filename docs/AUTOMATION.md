@@ -1,12 +1,30 @@
 # Automação local dos agentes
 
-O despachante e o monitor ficam no repositório **[tablehub-agent-automation](https://github.com/guilanfredi/tablehub-agent-automation)**:
-instalação, comandos (`npm run agentes`, `npm run despachante:teste`…), logs e funcionamento estão no README de lá.
-Resumo: um processo fica rodando, consulta o GitHub a cada 15 s e roda as funções (`claude -p "/<função> <n>"`) com até
-3 em paralelo, cada uma num worktree e com portas próprias. Parado, não gasta cota da assinatura.
+## Paperclip (atual)
+Desde 23/10/2026 o time roda no **[Paperclip](https://github.com/paperclipai/paperclip)**, um orquestrador local (interface em
+http://127.0.0.1:3100). A inicialização no Windows (`scripts/paperclip.ps1`) e a configuração do time (`paperclip/setup.mjs`, com as
+instruções de cada agente) ficam no repositório
+**[tablehub-agent-automation](https://github.com/guilanfredi/tablehub-agent-automation)**; o README de lá explica tudo.
 
-Aqui no TableHub fica só o que é do projeto, em `.agents/`. O despachante lê esses arquivos da `main` no GitHub
-(`origin/main`), então mudanças só valem depois de mergeadas, e ele relê a cada 10 min:
+| Agente | Modelo | Esforço | Recebe |
+|---|---|---|---|
+| Analista | Opus 5.5 | padrão | jogo novo e melhoria grande (especifica e passa ao Dev) |
+| Dev | Opus 5.5 | padrão | implementação de jogo novo e melhoria especificada |
+| Dev Rápido | Sonnet 5.5 | padrão | bugs e melhorias simples |
+| QA | Sonnet 5.5 | médio | 1ª etapa de revisão de toda issue de código |
+| Revisor | Opus 5.5 | médio | 2ª etapa; ao aprovar, marca o PR `pronto-para-aprovação` |
+
+- Cada issue roda num worktree isolado (`D:\dev\TableHub-agents\paperclip\<issue>`, com `npm ci`) e cada agente tem uma faixa de
+  portas fixa (`TABLEHUB_*_PORT`, ver "Portas por instância").
+- Os agentes rodam **liberados** (padrão do Paperclip): as permissões de `.agents/roles` não se aplicam. As regras do repositório
+  (sem merge, sem push na `main`, PRs pelo bot) estão nas instruções dos agentes.
+- O Paperclip não conhece os limites da assinatura (sessão de 5 h, semanal): com o uso extra ligado na conta, agentes seguem
+  cobrando depois do limite. Para conter isso, use orçamento por agente no Paperclip ou desligue o uso extra no claude.ai.
+
+## Despachante (desativado) e `.agents/`
+O despachante antigo consultava o GitHub a cada 15 s e rodava as funções pelas etiquetas `fase:*`. Ele está **desativado**;
+as seções abaixo descrevem a configuração dele em `.agents/`, mantida como histórico (o Paperclip não a lê).
+O despachante lia esses arquivos da `main` no GitHub (`origin/main`):
 
 | Arquivo | O que define |
 |---|---|
