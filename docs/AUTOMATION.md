@@ -1,18 +1,24 @@
 # Automação local dos agentes
 
 ## Paperclip (atual)
-Desde 23/10/2026 o time roda no **[Paperclip](https://github.com/paperclipai/paperclip)**, um orquestrador local (interface em
-http://127.0.0.1:3100). A inicialização no Windows (`scripts/paperclip.ps1`) e a configuração do time (`paperclip/setup.mjs`, com as
-instruções de cada agente) ficam no repositório
+Desde 23/10/2026 a empresa de agentes roda no **[Paperclip](https://github.com/paperclipai/paperclip)**, um orquestrador local
+(interface em http://127.0.0.1:3100). A inicialização no Windows (`scripts/paperclip.ps1`) e a configuração da empresa
+(`paperclip/setup.mjs`, com as instruções de cada agente e as rotinas) ficam no repositório
 **[tablehub-agent-automation](https://github.com/guilanfredi/tablehub-agent-automation)**; o README de lá explica tudo.
 
 | Agente | Modelo | Esforço | Recebe |
 |---|---|---|---|
+| **Produtor** | Opus 5.5 | médio | metas do dono: quebra em tarefas, distribui e acompanha; todos respondem a ele |
 | Analista | Opus 5.5 | padrão | jogo novo e melhoria grande (especifica e passa ao Dev) |
 | Dev | Opus 5.5 | padrão | implementação de jogo novo e melhoria especificada |
 | Dev Rápido | Sonnet 5.5 | padrão | bugs e melhorias simples |
-| QA | Sonnet 5.5 | médio | 1ª etapa de revisão de toda issue de código |
-| Revisor | Opus 5.5 | médio | 2ª etapa; ao aprovar, marca o PR `pronto-para-aprovação` |
+| QA | Sonnet 5.5 | médio | etapa de revisão de toda issue de código (testes) |
+| Designer | Sonnet 5.5 | padrão | UI/UX, sistema visual, arte SVG; etapa de revisão quando muda a interface |
+| Segurança | Opus 5.5 | médio | auditoria mensal; etapa de revisão quando muda servidor ou protocolo |
+| Revisor | Opus 5.5 | médio | última etapa; ao aprovar, marca o PR `pronto-para-aprovação` |
+| Release | Sonnet 5.5 | médio | conferência diária de produção depois dos deploys, notas de versão |
+| Financeiro | Sonnet 5.5 | baixo | relatório semanal de custos (só recomenda) |
+| Marketing | Sonnet 5.5 | padrão | plano semanal de conteúdo, redes sociais, comunidade (o dono publica) |
 
 - Cada issue roda num worktree isolado (`D:\dev\TableHub-agents\paperclip\<issue>`, com `npm ci`) e cada agente tem uma faixa de
   portas fixa (`TABLEHUB_*_PORT`, ver "Portas por instância").

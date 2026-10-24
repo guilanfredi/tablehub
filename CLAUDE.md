@@ -8,7 +8,7 @@ Plataforma PWA para jogar boardgames em salas (Dominó, Truco Paulista, Catan…
   Antes de commitar, confira `git config user.name` / `user.email` (identidade do bot neste repo) e `gh auth status` (bot ativo).
   Se não estiver configurado, pare e peça ao usuário — não use a conta pessoal dele.
 - PR aprovado + CI verde → merge → deploy automático (`.github/workflows/deploy.yml`).
-- **Time de agentes** (`docs/TEAM.md`): Analista, Dev, Dev Rápido, QA e Revisor são agentes do Paperclip (orquestrador local) que usam as skills `/analista`, `/dev`, `/qa`, `/revisor`. A issue do Paperclip é o quadro de passagem (etapas de revisão QA → Revisor); o PR no GitHub guarda código e revisão (comentários com a função entre colchetes).
+- **Empresa de agentes** (`docs/TEAM.md`): agentes do Paperclip (orquestrador local) liderados pelo Produtor — Analista, Dev, Dev Rápido, QA e Revisor (usam as skills `/analista`, `/dev`, `/qa`, `/revisor`) e Designer, Segurança, Release, Financeiro e Marketing. A issue do Paperclip é o quadro de passagem (etapas de revisão QA → Designer/Segurança quando couber → Revisor); o PR no GitHub guarda código e revisão (comentários com a função entre colchetes).
 - Configuração do Paperclip, monitor e relatório ficam no repositório [tablehub-agent-automation](https://github.com/guilanfredi/tablehub-agent-automation) (ver `docs/AUTOMATION.md`). Tarefas nascem no Paperclip; o despachante antigo (etiquetas `fase:*`, configuração em `.agents/`) está desativado.
 - Manuais de jogos ficam em `manuals/` (fora do git; material protegido).
 - Detalhes técnicos de jogos: `docs/GAME_AUTHORING.md`. A skill `add-game` é o modo solo (uma sessão faz tudo).
